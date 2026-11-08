@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Photos</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#a68cff; --dim: rgba(255,255,255,.55); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --card:#fff; --border:#000; --accent:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --card:#f5f6f8; --border:#70737e; --accent:#3c66ff; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --accent:#1a66d9; --dim:#334a7a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-rows: auto 1fr; height:100%; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .toolbar h1 { margin: 0; font-size: 16px; }
+  .count { font-size: 12px; color: var(--dim); }
+  .toolbar-actions button { padding: 6px 12px; background: var(--accent); color: #fff; border: 0; border-radius: 6px; font: inherit; cursor: pointer; }
+  body[data-era="dawn"] .toolbar-actions button { background:#000; border-radius: 0; border: 2px solid #000; }
+  .grid { overflow:auto; padding: 14px; display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; align-content:start; }
+  .photo { aspect-ratio: 4/3; overflow: hidden; border-radius: 8px; cursor: pointer; background:#333; transition: transform .15s; position: relative; }
+  body[data-era="dawn"] .photo { border-radius: 0; border: 2px solid #000; }
+  .photo:hover { transform: scale(1.02); }
+  .photo img { width:100%; height:100%; object-fit: cover; display:block; }
+  .photo .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 8px; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); color: #fff; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  .viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: grid; place-content: center; z-index: 100; padding: 40px; }
+  .viewer img { max-width: 100%; max-height: 90vh; display: block; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+  .viewer .vcap { color: #fff; text-align: center; margin-top: 10px; font-size: 13px; }
+  .viewer .close { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: #fff; font-size: 18px; cursor: pointer; }
+  .viewer .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 60px; border: 0; background: rgba(255,255,255,.08); color: #fff; font-size: 24px; cursor: pointer; border-radius: 6px; }
+  .viewer .nav.prev { left: 20px; }
+  .viewer .nav.next { right: 20px; }
+  .empty { grid-column: 1/-1; text-align: center; color: var(--dim); padding: 40px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div><h1>Photos</h1><div class="count" id="count">—</div></div>
+    <div class="toolbar-actions">
+      <label for="upload" style="padding:6px 12px;background:transparent;color:inherit;border:1px solid var(--border);border-radius:6px;cursor:pointer;margin-right:6px;">Add photo</label>
+      <input id="upload" type="file" accept="image/*" multiple style="display:none"/>
+      <button id="reset" title="Clear uploaded photos">Reset</button>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="viewer" id="viewer" hidden>
+  <button class="close" id="close" aria-label="Close">×</button>
+  <button class="nav prev" id="prev" aria-label="Previous">‹</button>
+  <button class="nav next" id="next" aria-label="Next">›</button>
+  <div>
+    <img id="vimg" src="" alt=""/>
+    <div class="vcap" id="vcap">—</div>
+  </div>
+</div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1:photos";
+
+const WALLPAPERS = [
+  { id:"aurora-glass", name:"Aurora" },
+  { id:"ocean-sunset", name:"Ocean Sunset" },
+  { id:"mountain-dawn", name:"Mountain Dawn" },
+  { id:"ridge-midday", name:"Ridge Midday" },
+  { id:"desert-dune", name:"Desert Dune" },
+  { id:"forest-mist", name:"Forest Mist" },
+  { id:"space-nebula", name:"Nebula" },
+  { id:"wave-form", name:"Waveform" },
+  { id:"crystal-glyph", name:"Crystal" },
+  { id:"dither-pond", name:"Dither Pond" },
+];
+
+const gridEl = document.getElementById("grid");
+const countEl = document.getElementById("count");
+const viewer = document.getElementById("viewer");
+const vimg = document.getElementById("vimg");
+const vcap = document.getElementById("vcap");
+
+function loadUserPhotos() {
+  try { return JSON.parse(localStorage.getItem(NS)) || []; } catch { return []; }
+}
+function saveUserPhotos(arr) {
+  try { localStorage.setItem(NS, JSON.stringify(arr)); } catch (e) { alert("Could not save photos: " + e.message); }
+}
+let userPhotos = loadUserPhotos();
+let viewing = 0;
+
+function currentList() {
+  // user photos first, then shipped wallpapers
+  return [
+    ...userPhotos.map(p => ({ src: p.data, caption: p.name || "Photo", userId: p.id })),
+    ...WALLPAPERS.map(w => ({ src: "../assets/wallpapers/" + w.id + ".svg", caption: w.name }))
+  ];
+}
+function render() {
+  const items = currentList();
+  countEl.textContent = items.length + " items";
+  gridEl.innerHTML = "";
+  if (items.length === 0) {
+    const d = document.createElement("div"); d.className = "empty";
+    d.textContent = "No photos yet. Add one with the button above.";
+    gridEl.appendChild(d); return;
+  }
+  items.forEach((it, idx) => {
+    const d = document.createElement("div");
+    d.className = "photo";
+    d.innerHTML = `<img src="${escapeAttr(it.src)}" alt="${escapeAttr(it.caption)}" loading="lazy"/><span class="caption">${escapeHtml(it.caption)}</span>`;
+    d.addEventListener("click", () => openViewer(idx));
+    gridEl.appendChild(d);
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+function openViewer(i) {
+  const items = currentList();
+  if (!items.length) return;
+  viewing = (i + items.length) % items.length;
+  const it = items[viewing];
+  vimg.src = it.src;
+  vcap.textContent = it.caption;
+  viewer.hidden = false;
+}
+document.getElementById("close").addEventListener("click", () => { viewer.hidden = true; });
+document.getElementById("prev").addEventListener("click", () => openViewer(viewing - 1));
+document.getElementById("next").addEventListener("click", () => openViewer(viewing + 1));
+viewer.addEventListener("click", (e) => { if (e.target === viewer) viewer.hidden = true; });
+document.addEventListener("keydown", (e) => {
+  if (viewer.hidden) return;
+  if (e.key === "Escape") viewer.hidden = true;
+  if (e.key === "ArrowLeft") openViewer(viewing - 1);
+  if (e.key === "ArrowRight") openViewer(viewing + 1);
+});
+
+document.getElementById("upload").addEventListener("change", async (e) => {
+  const files = [...e.target.files];
+  for (const f of files) {
+    const data = await new Promise((r) => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); });
+    userPhotos.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name: f.name, data, at: Date.now() });
+  }
+  try { saveUserPhotos(userPhotos); render(); }
+  catch (err) { alert("Could not save: " + err.message); }
+});
+document.getElementById("reset").addEventListener("click", () => {
+  if (!confirm("Remove all photos you added? Built-in wallpapers stay.")) return;
+  userPhotos = [];
+  saveUserPhotos(userPhotos);
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

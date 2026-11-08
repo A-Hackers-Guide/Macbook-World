@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg-i" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe8c4"/>
+      <stop offset="0.5" stop-color="#ffa485"/>
+      <stop offset="1" stop-color="#5f3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg-i)"/>
+  <g fill="none" stroke-width="1" opacity="0.4">
+    <path d="M0 540 Q 480 460 960 540 T 1920 540" stroke="#7a3a6a"/>
+    <path d="M0 580 Q 480 500 960 580 T 1920 580" stroke="#7a3a6a"/>
+    <path d="M0 620 Q 480 540 960 620 T 1920 620" stroke="#7a3a6a"/>
+    <path d="M0 660 Q 480 580 960 660 T 1920 660" stroke="#5a2a4a"/>
+    <path d="M0 700 Q 480 620 960 700 T 1920 700" stroke="#5a2a4a"/>
+    <path d="M0 740 Q 480 660 960 740 T 1920 740" stroke="#5a2a4a"/>
+    <path d="M0 780 Q 480 700 960 780 T 1920 780" stroke="#4a1a3a"/>
+    <path d="M0 820 Q 480 740 960 820 T 1920 820" stroke="#4a1a3a"/>
+    <path d="M0 860 Q 480 780 960 860 T 1920 860" stroke="#4a1a3a"/>
+    <path d="M0 900 Q 480 820 960 900 T 1920 900" stroke="#3a0a2a"/>
+    <path d="M0 940 Q 480 860 960 940 T 1920 940" stroke="#3a0a2a"/>
+    <path d="M0 980 Q 480 900 960 980 T 1920 980" stroke="#3a0a2a"/>
+    <path d="M0 1020 Q 480 940 960 1020 T 1920 1020" stroke="#2a001a"/>
+  </g>
+  <circle cx="1500" cy="280" r="60" fill="#fff1dc" opacity="0.9"/>
+</svg>

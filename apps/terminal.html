@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Terminal</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background:#0b0b10; color:#dfffd6; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size:13px; overflow:hidden; }
+  body[data-era="dawn"] { background:#fff; color:#000; }
+  body[data-era="noon"] { background:#1e1e22; color:#dfffd6; }
+  body[data-era="dusk"] { background:#0d1830; color:#9ccfff; }
+  #scroll { height:100%; overflow:auto; padding: 12px 14px; cursor: text; }
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .prompt { color:#78d58b; }
+  body[data-era="dawn"] .prompt { color:#000; font-weight:700; }
+  body[data-era="dusk"] .prompt { color:#78b7ff; }
+  .err { color:#ff7f7f; }
+  .dim { opacity:.6; }
+  input { background:transparent; border:0; color:inherit; font:inherit; outline:none; width: 60%; }
+  .ascii { line-height: 1; }
+</style>
+</head>
+<body>
+<div id="scroll"><div id="out"></div></div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+const out = document.getElementById("out");
+const scroll = document.getElementById("scroll");
+let cwd = "/home/you";
+const history = [];
+let histIdx = -1;
+const WHOAMI = (() => {
+  try { return (JSON.parse(localStorage.getItem("prismos:v1:setup:data")) || {}).name || "you"; }
+  catch { return "you"; }
+})();
+
+const FS = {
+  "/": ["bin","etc","home","tmp"],
+  "/home": ["you"],
+  "/home/you": ["README.txt","notes.md","trips"],
+  "/home/you/trips": ["coast.md"],
+  "/etc": ["motd"],
+  "/bin": ["ls","cat","echo","clear","help","theme","fortune","cowsay","date","uname","whoami","history","pwd","cd"],
+  "/tmp": [],
+};
+const FILES = {
+  "/home/you/README.txt": "Hi, " + WHOAMI + ".\n\nWelcome to Prism Terminal.\nTry: help, ls, fortune, cowsay hello, uname, theme nightfall",
+  "/home/you/notes.md": "# Notes\n\n- buy milk\n- figure out why the stars are quieter at night\n- learn to whistle",
+  "/home/you/trips/coast.md": "Coast trip\n==========\nIt rained the whole way down, and then it stopped.",
+  "/etc/motd": "Prism OS v1.0 (First Light)\nAll artwork original. All commands friendly."
+};
+const FORTUNES = [
+  "The best time to plant a tree was 20 years ago. The second best time is to go take a nap.",
+  "If it's working, don't look at it.",
+  "The computer is yours.",
+  "You can tell a lot about a person by how they organize their windows.",
+  "In the long run, we're all shell scripts.",
+  "A folder named \"misc\" is a folder you've given up on."
+];
+
+function println(text, cls) {
+  const d = document.createElement("div");
+  d.className = "line" + (cls ? " " + cls : "");
+  d.textContent = text;
+  out.appendChild(d);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+function printHtml(html, cls) {
+  const d = document.createElement("div");
+  d.className = "line" + (cls ? " " + cls : "");
+  d.innerHTML = html;
+  out.appendChild(d);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function abspath(p) {
+  if (!p) return cwd;
+  if (p.startsWith("/")) return normalize(p);
+  return normalize(cwd + "/" + p);
+}
+function normalize(p) {
+  const parts = p.split("/").filter(Boolean);
+  const stack = [];
+  for (const x of parts) {
+    if (x === "..") stack.pop();
+    else if (x === ".") continue;
+    else stack.push(x);
+  }
+  return "/" + stack.join("/");
+}
+function exists(p) { return FS[p] !== undefined || FILES[p] !== undefined; }
+function isDir(p) { return FS[p] !== undefined; }
+
+const CMDS = {
+  help() {
+    println("Available commands:");
+    println("  ls [path]           list directory");
+    println("  cd [path]           change directory");
+    println("  pwd                 print working directory");
+    println("  cat <file>          print file contents");
+    println("  echo <text…>        print text");
+    println("  date                print the date");
+    println("  whoami              print your name");
+    println("  uname               print system info");
+    println("  theme <era>         switch desktop era (dawn|noon|dusk|nightfall)");
+    println("  fortune             a random thought");
+    println("  cowsay <text…>      a bovine delivery of your text");
+    println("  history             command history");
+    println("  clear               clear the screen");
+    println("  help                this list");
+  },
+  ls(args) {
+    const target = abspath(args[0] || cwd);
+    if (!exists(target)) return println("ls: no such path: " + target, "err");
+    if (!isDir(target)) return println(target.split("/").pop());
+    const entries = FS[target] || [];
+    if (!entries.length) return println("(empty)", "dim");
+    println(entries.map(e => isDir(abspath(target + "/" + e)) ? e + "/" : e).join("  "));
+  },
+  cd(args) {
+    const t = abspath(args[0] || "/home/you");
+    if (!exists(t)) return println("cd: no such directory: " + t, "err");
+    if (!isDir(t)) return println("cd: not a directory: " + t, "err");
+    cwd = t;
+  },
+  pwd() { println(cwd); },
+  cat(args) {
+    if (!args[0]) return println("cat: missing operand", "err");
+    const t = abspath(args[0]);
+    if (FILES[t] !== undefined) println(FILES[t]);
+    else if (isDir(t)) println("cat: is a directory: " + t, "err");
+    else println("cat: no such file: " + t, "err");
+  },
+  echo(args) { println(args.join(" ")); },
+  date() { println(new Date().toString()); },
+  whoami() { println(WHOAMI); },
+  uname() { println("Prism OS 1.0 (First Light) — " + era); },
+  theme(args) {
+    const ok = ["dawn","noon","dusk","nightfall"];
+    if (!args[0]) { println("usage: theme <" + ok.join("|") + ">"); return; }
+    if (!ok.includes(args[0])) { println("theme: unknown era: " + args[0], "err"); return; }
+    println("Switching to era '" + args[0] + "'…");
+    parent.postMessage({ type: "prism:switch-era", era: args[0] }, "*");
+  },
+  fortune() { println(FORTUNES[Math.floor(Math.random() * FORTUNES.length)]); },
+  cowsay(args) {
+    const text = args.join(" ") || "moo";
+    const line = "-".repeat(text.length + 2);
+    printHtml(`<pre class="ascii"> ${line}
+&lt; ${escapeHtml(text)} &gt;
+ ${line}
+        \\   ^__^
+         \\  (oo)\\_______
+            (__)\\       )\\/\\
+                ||----w |
+                ||     ||</pre>`);
+  },
+  history() {
+    if (!history.length) return println("(empty)", "dim");
+    history.forEach((h, i) => println(String(i+1).padStart(3) + "  " + h));
+  },
+  clear() { out.innerHTML = ""; },
+};
+
+function showPrompt() {
+  const line = document.createElement("div");
+  line.className = "line";
+  line.innerHTML = `<span class="prompt">${escapeHtml(WHOAMI)}@prism:${escapeHtml(cwd)}$ </span><input id="input" autocomplete="off" spellcheck="false">`;
+  out.appendChild(line);
+  scroll.scrollTop = scroll.scrollHeight;
+  const inp = line.querySelector("input");
+  inp.focus();
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const cmd = inp.value;
+      const parent = inp.parentElement;
+      const txt = document.createTextNode(cmd);
+      parent.removeChild(inp);
+      parent.appendChild(txt);
+      if (cmd.trim()) {
+        history.push(cmd);
+        histIdx = history.length;
+        run(cmd);
+      }
+      showPrompt();
+    } else if (e.key === "ArrowUp") {
+      if (histIdx > 0) { histIdx--; inp.value = history[histIdx] || ""; e.preventDefault(); }
+    } else if (e.key === "ArrowDown") {
+      if (histIdx < history.length - 1) { histIdx++; inp.value = history[histIdx] || ""; }
+      else { histIdx = history.length; inp.value = ""; }
+      e.preventDefault();
+    } else if (e.ctrlKey && e.key === "l") { CMDS.clear(); e.preventDefault(); showPrompt(); }
+  });
+}
+function run(line) {
+  const parts = line.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+  const argv = parts.map(p => p.replace(/^["']|["']$/g, ""));
+  const name = argv.shift();
+  if (!name) return;
+  const fn = CMDS[name];
+  if (!fn) return println(name + ": command not found. Try 'help'.", "err");
+  try { fn(argv); } catch (e) { println("error: " + (e.message || String(e)), "err"); }
+}
+
+// Boot greeting
+printHtml(`<pre class="ascii">   ___      _               _____
+  / _ \\_ __(_)___ _ __ ___  | ____|_ __ ___
+ / /_)/ '__| / __| '_ \` _ \\ |  _| | '__/ _ \\
+/ ___/| |  | \\__ \\ | | | | || |___| | |  __/
+\\/    |_|  |_|___/_| |_| |_||_____|_|  \\___|
+</pre>`);
+println("Prism OS Terminal — type 'help' for commands.");
+println("");
+showPrompt();
+
+// Click anywhere to focus input
+scroll.addEventListener("click", () => {
+  const inp = document.getElementById("input");
+  if (inp) inp.focus();
+});
+</script>
+</body>
+</html>

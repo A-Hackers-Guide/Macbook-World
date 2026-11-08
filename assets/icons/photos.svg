@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg-p" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd891"/>
+      <stop offset="0.5" stop-color="#ff7e9a"/>
+      <stop offset="1" stop-color="#9b65ff"/>
+    </linearGradient>
+    <linearGradient id="sky-p" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ad0ff"/>
+      <stop offset="1" stop-color="#ffd891"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="128" height="128" rx="28" ry="28" fill="url(#bg-p)"/>
+  <rect x="20" y="30" width="88" height="66" rx="6" fill="#fff"/>
+  <rect x="26" y="36" width="76" height="46" rx="3" fill="url(#sky-p)"/>
+  <circle cx="90" cy="46" r="7" fill="#fff5cc"/>
+  <path d="M26 82 L46 60 L58 72 L76 54 L102 82 Z" fill="#4a7a52"/>
+  <path d="M26 82 L102 82 L102 82 L26 82 Z" fill="#2f4a3b"/>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="bg-g" cx="0.5" cy="0.5" r="1">
+      <stop offset="0" stop-color="#0d1430"/>
+      <stop offset="1" stop-color="#02020a"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#5a7bff" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg-g)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <g fill="#a68cff">
+    <circle cx="300" cy="300" r="4"/><circle cx="600" cy="420" r="4"/><circle cx="900" cy="300" r="4"/>
+    <circle cx="1200" cy="480" r="4"/><circle cx="1500" cy="300" r="4"/><circle cx="420" cy="720" r="4"/>
+    <circle cx="780" cy="840" r="4"/><circle cx="1080" cy="720" r="4"/><circle cx="1380" cy="840" r="4"/>
+  </g>
+  <g stroke="#a68cff" stroke-width="0.8" fill="none" opacity="0.5">
+    <line x1="300" y1="300" x2="600" y2="420"/>
+    <line x1="600" y1="420" x2="900" y2="300"/>
+    <line x1="900" y1="300" x2="1200" y2="480"/>
+    <line x1="1200" y1="480" x2="1500" y2="300"/>
+    <line x1="420" y1="720" x2="780" y2="840"/>
+    <line x1="780" y1="840" x2="1080" y2="720"/>
+    <line x1="1080" y1="720" x2="1380" y2="840"/>
+  </g>
+</svg>

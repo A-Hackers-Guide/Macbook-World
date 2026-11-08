@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Paint</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --tool: rgba(255,255,255,.08); --border: rgba(255,255,255,.1); --accent:#a68cff; }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --tool:#fff; --border:#000; --accent:#000; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --tool:#f5f6f8; --border:#70737e; --accent:#3c66ff; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --tool: rgba(255,255,255,.65); --border: rgba(47,90,165,.3); --accent:#1a66d9; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; user-select:none; -webkit-user-select:none; }
+  .app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+  .toolbar { display: flex; gap: 10px; align-items: center; padding: 8px 10px; background: var(--tool); border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .group { display: flex; gap: 4px; align-items: center; padding: 0 10px 0 0; border-right: 1px solid var(--border); }
+  .group:last-child { border-right: 0; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  body[data-era="dawn"] .swatch { border-radius: 0; border: 2px solid #000; }
+  .swatch.active { outline: 2px solid var(--fg); outline-offset: 1px; }
+  button { padding: 5px 10px; font: inherit; font-size: 12px; background: transparent; color: inherit; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+  body[data-era="dawn"] button { border-radius: 0; }
+  button:hover, button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  input[type=range] { width: 80px; }
+  .canvas-wrap { position: relative; overflow: hidden; background: #777; display: grid; place-content: center; }
+  canvas { background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,.4); display: block; cursor: crosshair; touch-action: none; }
+  .label { font-size: 11px; color: inherit; opacity: 0.7; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="group" id="tools">
+      <button class="active" data-tool="brush" title="Brush">✎ Brush</button>
+      <button data-tool="eraser" title="Eraser">◯ Eraser</button>
+      <button data-tool="fill" title="Fill">◆ Fill</button>
+    </div>
+    <div class="group">
+      <span class="label">Colors</span>
+      <div id="swatches" style="display:flex;gap:6px;"></div>
+    </div>
+    <div class="group">
+      <span class="label">Size</span>
+      <input type="range" min="1" max="60" value="6" id="size"/>
+      <span id="size-val" class="label">6</span>
+    </div>
+    <div class="group">
+      <button id="clear">Clear</button>
+      <button id="save">Save PNG</button>
+    </div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="canvas" width="900" height="560"></canvas>
+  </div>
+</div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+const COLORS = ["#000000","#ffffff","#ff5a6a","#ff9f3f","#ffd36a","#8dd47c","#4ac7cf","#5f93f5","#a68cff","#ff7bca","#8b572a","#999999"];
+let color = "#000000";
+let size = 6;
+let tool = "brush";
+
+const swatchesEl = document.getElementById("swatches");
+COLORS.forEach((c, i) => {
+  const s = document.createElement("div");
+  s.className = "swatch" + (i === 0 ? " active" : "");
+  s.style.background = c;
+  s.dataset.color = c;
+  s.addEventListener("click", () => {
+    color = c;
+    for (const n of swatchesEl.children) n.classList.remove("active");
+    s.classList.add("active");
+  });
+  swatchesEl.appendChild(s);
+});
+
+document.querySelectorAll("#tools button").forEach(b => {
+  b.addEventListener("click", () => {
+    tool = b.dataset.tool;
+    document.querySelectorAll("#tools button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+  });
+});
+
+const sizeEl = document.getElementById("size");
+const sizeVal = document.getElementById("size-val");
+sizeEl.addEventListener("input", () => { size = +sizeEl.value; sizeVal.textContent = size; });
+
+document.getElementById("clear").addEventListener("click", () => {
+  if (!confirm("Clear the canvas?")) return;
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
+document.getElementById("save").addEventListener("click", () => {
+  const link = document.createElement("a");
+  link.download = "prism-paint.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+});
+
+// Drawing
+let drawing = false;
+let last = null;
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  const sx = canvas.width / r.width, sy = canvas.height / r.height;
+  return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+}
+canvas.addEventListener("pointerdown", (e) => {
+  canvas.setPointerCapture(e.pointerId);
+  const p = pos(e);
+  if (tool === "fill") { floodFill(Math.round(p.x), Math.round(p.y), color); return; }
+  drawing = true; last = p;
+  stroke(p, p);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!drawing) return;
+  const p = pos(e);
+  stroke(last, p);
+  last = p;
+});
+canvas.addEventListener("pointerup", () => { drawing = false; });
+canvas.addEventListener("pointercancel", () => { drawing = false; });
+
+function stroke(a, b) {
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = size;
+  ctx.strokeStyle = tool === "eraser" ? "#ffffff" : color;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+}
+
+// Flood fill (simple, iterative)
+function floodFill(x, y, hex) {
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = img.data;
+  const W = canvas.width, H = canvas.height;
+  const idx = (x, y) => (y * W + x) * 4;
+  const tr = parseInt(hex.slice(1,3),16), tg = parseInt(hex.slice(3,5),16), tb = parseInt(hex.slice(5,7),16);
+  const si = idx(x,y);
+  const sr = d[si], sg = d[si+1], sb = d[si+2];
+  if (sr === tr && sg === tg && sb === tb) return;
+  const stack = [[x,y]];
+  const tol = 0;
+  let count = 0, MAX = W * H;
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    if (cx < 0 || cx >= W || cy < 0 || cy >= H) continue;
+    const i = idx(cx, cy);
+    if (Math.abs(d[i]-sr) > tol || Math.abs(d[i+1]-sg) > tol || Math.abs(d[i+2]-sb) > tol) continue;
+    d[i] = tr; d[i+1] = tg; d[i+2] = tb; d[i+3] = 255;
+    stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+    if (++count > MAX) break;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+</script>
+</body>
+</html>

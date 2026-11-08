@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Music</title>
+<style>
+  :root { color-scheme: dark; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#ff6ab2; --dim: rgba(255,255,255,.55); --row: rgba(255,255,255,.04); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; --row:#eee; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; --row:#dde1e8; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; --row: rgba(255,255,255,.4); }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+  .head { padding: 18px 20px 10px; border-bottom: 1px solid var(--border); }
+  .head h1 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+  .tagline { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+  .tracks { overflow: auto; padding: 8px; }
+  .track { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 12px; padding: 10px; border-radius: 8px; cursor: pointer; align-items: center; }
+  .track:hover { background: var(--row); }
+  .track.playing { background: var(--row); color: var(--accent); }
+  body[data-era="dawn"] .track.playing { background: #000; color: #fff; }
+  .track-num { color: var(--dim); font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; }
+  .track-name { font-weight: 600; }
+  .track-key { color: var(--dim); font-size: 12px; }
+  .track-len { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .player { border-top: 1px solid var(--border); padding: 12px 20px; background: var(--card); }
+  .now-playing { font-size: 13px; margin-bottom: 8px; }
+  .now-playing strong { font-weight: 700; }
+  .progress { height: 4px; background: var(--row); border-radius: 999px; overflow: hidden; margin-bottom: 10px; cursor: pointer; }
+  .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width .25s linear; }
+  .controls { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  .controls button { width: 36px; height: 36px; border-radius: 50%; background: var(--row); color: var(--fg); border: 0; cursor: pointer; display: grid; place-content: center; font-size: 14px; }
+  .controls button.play { width: 44px; height: 44px; background: var(--accent); color: #fff; font-size: 18px; }
+  body[data-era="dawn"] .controls button { border: 2px solid #000; border-radius: 0; background: #fff; color: #000; }
+  body[data-era="dawn"] .controls button.play { background: #000; color: #fff; }
+  .vol { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 12px; color: var(--dim); }
+  .vol input { flex: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="head">
+    <h1>Music</h1>
+    <p class="tagline">Four original instrumentals, played live by Web Audio.</p>
+  </header>
+  <ul class="tracks" id="tracks"></ul>
+  <div class="player">
+    <div class="now-playing" id="now-playing">Nothing playing</div>
+    <div class="progress" id="progress"><div class="progress-fill" id="fill"></div></div>
+    <div class="controls">
+      <button id="prev" title="Previous">⏮</button>
+      <button class="play" id="play" title="Play">▶</button>
+      <button id="next" title="Next">⏭</button>
+    </div>
+    <div class="vol">
+      <span>♪</span>
+      <input type="range" min="0" max="100" value="55" id="vol" />
+    </div>
+  </div>
+</div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+// --- Simple note helpers ---
+const NOTE = {
+  "C3":130.81,"D3":146.83,"E3":164.81,"F3":174.61,"G3":196,"A3":220,"B3":246.94,
+  "C4":261.63,"D4":293.66,"E4":329.63,"F4":349.23,"G4":392,"A4":440,"B4":493.88,
+  "C5":523.25,"D5":587.33,"E5":659.25,"F5":698.46,"G5":783.99,"A5":880,"B5":987.77,
+  "C6":1046.5
+};
+const R = { dur: 0 }; // rest marker handled by "" in note
+
+function track(name, key, tempo, pattern) {
+  return { name, key, tempo, pattern };
+}
+
+// Patterns: arrays of [[note, beats], ...] per voice
+const TRACKS = [
+  track("Aurora Hum", "C add9 · slow pad", 70,
+    [
+      // Pad (triangle, slow)
+      { voice: "pad", notes: [["C3",8],["G3",8],["E4",8],["D5",8],["C4",8],["G3",8],["A3",8],["E4",8]] },
+      // Bell (sine, melody)
+      { voice: "bell", notes: [["",4],["E5",2],["G5",2],["",4],["A5",2],["G5",2],["",4],["E5",2],["D5",2],["",4],["C5",4]] }
+    ]
+  ),
+  track("Dither Waltz", "A minor · 3/4 waltz", 120,
+    [
+      { voice: "pluck", notes: [["A3",1],["E4",1],["A4",1],["A3",1],["E4",1],["A4",1],["F3",1],["C4",1],["F4",1],["G3",1],["D4",1],["G4",1]] },
+      { voice: "bell", notes: [["A4",1.5],["B4",.5],["C5",1],["E5",1.5],["D5",.5],["C5",1],["A4",1.5],["G4",.5],["F4",1],["E4",3]] }
+    ]
+  ),
+  track("Glass Chimes", "E major · sparse", 90,
+    [
+      { voice: "bell", notes: [["E5",3],["G5",1],["B5",2],["A5",2],["G5",3],["E5",1],["D5",2],["E5",2],["B4",4],["E5",4]] },
+      { voice: "pad", notes: [["E3",8],["B3",8],["A3",8],["E4",8]] }
+    ]
+  ),
+  track("Platinum March", "G major · march", 118,
+    [
+      { voice: "bass", notes: [["G2",1],["",1],["G3",1],["",1],["D3",1],["",1],["D3",1],["",1],["C3",1],["",1],["C3",1],["",1],["G3",1],["",3]] },
+      { voice: "pluck", notes: [["G4",1],["B4",1],["D5",1],["G5",1],["D5",2],["B4",1],["A4",1],["G4",2],["F#4",2],["G4",4]] }
+    ]
+  ),
+];
+// Fix: use A2 and B2 etc missing freqs
+Object.assign(NOTE, { "G2":97.999, "A2":110, "B2":123.47, "F#4":369.99 });
+
+// --- Audio engine ---
+let ctx, master, state = "stopped", current = 0, timeouts = [], startedAt = 0, totalMs = 0;
+function ensureCtx() {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = (volEl.value / 100) * 0.4;
+    master.connect(ctx.destination);
+  }
+}
+function voiceParams(voice) {
+  switch (voice) {
+    case "pad":   return { type:"triangle", a:0.6, d:0.6, r:1.2, gain:0.18 };
+    case "bell":  return { type:"sine",     a:0.01, d:0.3, r:0.6, gain:0.22 };
+    case "pluck": return { type:"triangle", a:0.01, d:0.15, r:0.3, gain:0.20 };
+    case "bass":  return { type:"sine",     a:0.02, d:0.15, r:0.25, gain:0.32 };
+    default:      return { type:"sine",     a:0.02, d:0.2,  r:0.3, gain:0.20 };
+  }
+}
+function schedule(notes, voice, tempo, startAt) {
+  const p = voiceParams(voice);
+  const beatSec = 60 / tempo;
+  let t = startAt;
+  for (const [n, beats] of notes) {
+    if (n && NOTE[n]) {
+      const osc = ctx.createOscillator();
+      osc.type = p.type;
+      osc.frequency.value = NOTE[n];
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(p.gain, t + p.a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + beats * beatSec);
+      osc.connect(g).connect(master);
+      osc.start(t);
+      osc.stop(t + beats * beatSec + 0.1);
+    }
+    t += beats * beatSec;
+  }
+  return t - startAt;
+}
+function playTrack(idx) {
+  stop();
+  ensureCtx();
+  if (ctx.state === "suspended") ctx.resume().catch(()=>{});
+  current = idx;
+  const t = TRACKS[idx];
+  const now = ctx.currentTime + 0.08;
+  let dur = 0;
+  for (const v of t.pattern) {
+    dur = Math.max(dur, schedule(v.notes, v.voice, t.tempo, now));
+  }
+  state = "playing";
+  startedAt = Date.now();
+  totalMs = Math.ceil(dur * 1000);
+  updateUI();
+  // Animate progress
+  const tick = () => {
+    if (state !== "playing") return;
+    const elapsed = Date.now() - startedAt;
+    fill.style.width = Math.min(100, (elapsed / totalMs) * 100) + "%";
+    if (elapsed >= totalMs) {
+      // auto next
+      playTrack((current + 1) % TRACKS.length);
+    } else {
+      requestAnimationFrame(tick);
+    }
+  };
+  requestAnimationFrame(tick);
+}
+function stop() {
+  state = "stopped";
+  if (ctx) {
+    // close and reopen to abort any scheduled notes
+    try { ctx.close(); } catch {}
+    ctx = null; master = null;
+  }
+  fill.style.width = "0%";
+}
+
+// --- UI ---
+const tracksEl = document.getElementById("tracks");
+const npEl = document.getElementById("now-playing");
+const playBtn = document.getElementById("play");
+const fill = document.getElementById("fill");
+const volEl = document.getElementById("vol");
+TRACKS.forEach((t, i) => {
+  const li = document.createElement("li");
+  li.className = "track";
+  li.dataset.idx = i;
+  li.innerHTML = `
+    <span class="track-num">${i+1}</span>
+    <span>
+      <div class="track-name">${t.name}</div>
+      <div class="track-key">${t.key}</div>
+    </span>
+    <span class="track-len">${Math.round(60 / t.tempo * sumBeats(t))}s</span>
+    <span class="track-ico">▶</span>
+  `;
+  li.addEventListener("click", () => playTrack(i));
+  tracksEl.appendChild(li);
+});
+function sumBeats(t) {
+  let total = 0;
+  for (const v of t.pattern) {
+    total = Math.max(total, v.notes.reduce((s, n) => s + n[1], 0));
+  }
+  return total;
+}
+function updateUI() {
+  tracksEl.querySelectorAll(".track").forEach((n, i) => n.classList.toggle("playing", state === "playing" && i === current));
+  const t = TRACKS[current];
+  if (state === "playing") {
+    npEl.innerHTML = `Now playing <strong>${t.name}</strong>`;
+    playBtn.textContent = "❙❙";
+  } else {
+    npEl.textContent = "Nothing playing";
+    playBtn.textContent = "▶";
+  }
+}
+playBtn.addEventListener("click", () => {
+  if (state === "playing") { stop(); updateUI(); }
+  else playTrack(current);
+});
+document.getElementById("next").addEventListener("click", () => playTrack((current + 1) % TRACKS.length));
+document.getElementById("prev").addEventListener("click", () => playTrack((current - 1 + TRACKS.length) % TRACKS.length));
+volEl.addEventListener("input", () => { if (master) master.gain.value = (volEl.value / 100) * 0.4; });
+
+updateUI();
+</script>
+</body>
+</html>

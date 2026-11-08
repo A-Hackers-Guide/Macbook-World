@@ -290,6 +290,12 @@ window.addEventListener("message", (e) => {
     case "prism:wallpaper":   applyWallpaper(d.wallpaperId); break;
     case "prism:choose-era":  location.href = "index.html"; break;
     case "prism:reload-shell": location.reload(); break;
+    case "prism:switch-era":
+      if (d.era && ERAS.some((x) => x.id === d.era)) {
+        State.set("last-era", d.era);
+        location.href = `desktop.html?era=${encodeURIComponent(d.era)}`;
+      }
+      break;
   }
 });
 

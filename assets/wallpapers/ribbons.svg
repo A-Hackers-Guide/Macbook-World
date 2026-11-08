@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg-r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b0e3a"/>
+      <stop offset="1" stop-color="#2a0e52"/>
+    </linearGradient>
+    <linearGradient id="r1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff5fa4" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ff5fa4" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff5fa4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="r2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5faaff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#5faaff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#5faaff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="r3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8dff5f" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#8dff5f" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#8dff5f" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg-r)"/>
+  <g fill="none" stroke-width="40" stroke-linecap="round" opacity="0.8">
+    <path d="M-100 300 Q 400 100 900 400 T 2020 500" stroke="url(#r1)"/>
+    <path d="M-100 500 Q 500 300 1000 600 T 2020 700" stroke="url(#r2)"/>
+    <path d="M-100 700 Q 600 500 1100 800 T 2020 900" stroke="url(#r3)"/>
+  </g>
+</svg>
