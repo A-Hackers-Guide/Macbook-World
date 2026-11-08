@@ -29,6 +29,15 @@ export const ERAS = [
     previewBg: "linear-gradient(180deg, #8ba8ff 0%, #4972d9 60%, #2a4aa8 100%)"
   },
   {
+    id: "twilight",
+    name: "Twilight",
+    year: "pink-hour glass",
+    description: "Warm violet glass, the magic-hour cousin of the dark eras.",
+    stylesheet: "styles/eras/twilight.css",
+    defaultWallpaper: "ribbons",
+    previewBg: "linear-gradient(135deg, #ff7bca 0%, #8f6aff 60%, #2a104a 100%)"
+  },
+  {
     id: "nightfall",
     name: "Nightfall",
     year: "the frosted present",

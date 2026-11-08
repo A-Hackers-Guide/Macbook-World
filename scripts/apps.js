@@ -92,6 +92,22 @@ export const APPS = [
     defaultSize: { w: 620, h: 500 },
   },
   {
+    id: "weather",
+    name: "Weather",
+    icon: "assets/icons/weather.svg",
+    url: "apps/weather.html",
+    dock: true,
+    defaultSize: { w: 540, h: 620 },
+  },
+  {
+    id: "calendar",
+    name: "Calendar",
+    icon: "assets/icons/calendar.svg",
+    url: "apps/calendar.html",
+    dock: true,
+    defaultSize: { w: 820, h: 540 },
+  },
+  {
     id: "about",
     name: "About This Prism",
     icon: "assets/icons/about.svg",

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Weather</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#5faaff; --dim: rgba(255,255,255,.55); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:auto; }
+  .wrap { padding: 24px; max-width: 540px; margin: 0 auto; }
+  .head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 18px; gap: 8px; }
+  .head h1 { margin: 0; font-size: 20px; }
+  .head small { color: var(--dim); font-size: 12px; }
+  .refresh { background: var(--card); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; color: inherit; }
+  .refresh:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  body[data-era="dawn"] .refresh { border-radius: 0; }
+
+  .now { padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 20px; align-items: center; margin-bottom: 14px; }
+  body[data-era="dawn"] .now { border-radius: 0; }
+  .glyph { font-size: 64px; line-height: 1; }
+  .temp { font-size: 54px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cond { color: var(--dim); font-size: 14px; }
+  .loc  { font-weight: 600; margin-top: 4px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { padding: 10px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; font-size: 13px; }
+  body[data-era="dawn"] .stat { border-radius: 0; }
+  .stat-label { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-value { font-weight: 600; font-size: 18px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+  .forecast { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  body[data-era="dawn"] .forecast { border-radius: 0; }
+  .day { display: grid; grid-template-columns: 90px 36px 1fr auto; gap: 10px; padding: 10px 14px; align-items: center; border-bottom: 1px solid var(--border); }
+  .day:last-child { border-bottom: 0; }
+  .day-name { font-weight: 600; font-size: 13px; }
+  .day-ico { font-size: 22px; text-align: center; }
+  .day-cond { color: var(--dim); font-size: 12px; }
+  .day-range { font-variant-numeric: tabular-nums; }
+  .day-range .lo { color: var(--dim); margin-left: 8px; }
+
+  .msg { padding: 14px; color: var(--dim); font-size: 13px; text-align: center; }
+  .units { display:inline-flex; gap: 2px; padding: 2px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; font-size: 11px; }
+  .units button { padding: 2px 8px; border: 0; background: transparent; color: inherit; border-radius: 999px; cursor: pointer; }
+  .units button.active { background: var(--accent); color: #fff; }
+  body[data-era="dawn"] .units, body[data-era="dawn"] .units button { border-radius: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Weather</h1>
+      <small id="updated">—</small>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="units">
+        <button data-u="c" class="active">°C</button>
+        <button data-u="f">°F</button>
+      </div>
+      <button class="refresh" id="refresh">Refresh</button>
+    </div>
+  </div>
+  <div id="main"><div class="msg">Loading weather…</div></div>
+</div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1:weather";
+
+const CODE = {
+  0: { g:"☀", t:"Clear" },
+  1: { g:"🌤", t:"Mostly clear" }, 2: { g:"⛅", t:"Partly cloudy" }, 3: { g:"☁", t:"Overcast" },
+  45: { g:"🌫", t:"Fog" }, 48: { g:"🌫", t:"Freezing fog" },
+  51: { g:"🌦", t:"Light drizzle" }, 53: { g:"🌦", t:"Drizzle" }, 55: { g:"🌦", t:"Heavy drizzle" },
+  61: { g:"🌧", t:"Light rain" }, 63: { g:"🌧", t:"Rain" }, 65: { g:"🌧", t:"Heavy rain" },
+  71: { g:"🌨", t:"Light snow" }, 73: { g:"🌨", t:"Snow" }, 75: { g:"🌨", t:"Heavy snow" },
+  80: { g:"🌦", t:"Rain showers" }, 81: { g:"🌧", t:"Heavy showers" }, 82: { g:"⛈", t:"Violent showers" },
+  95: { g:"⛈", t:"Thunderstorm" }, 96: { g:"⛈", t:"T-storm w/ hail" }, 99: { g:"⛈", t:"Severe t-storm" }
+};
+function code(c) { return CODE[c] || { g:"🌡", t:"—" }; }
+
+let unit = localStorage.getItem(NS + ":unit") || "c";
+function cToDisplay(c) { return unit === "f" ? Math.round(c * 9/5 + 32) : Math.round(c); }
+function unitLbl() { return unit === "f" ? "°F" : "°C"; }
+
+document.querySelectorAll(".units button").forEach(b => {
+  b.addEventListener("click", () => {
+    unit = b.dataset.u;
+    localStorage.setItem(NS + ":unit", unit);
+    document.querySelectorAll(".units button").forEach(x => x.classList.toggle("active", x.dataset.u === unit));
+    renderCached();
+  });
+  if (b.dataset.u === unit) b.classList.add("active");
+  else b.classList.remove("active");
+});
+
+const SAMPLE = { name: "San Francisco", lat: 37.7749, lon: -122.4194 };
+
+let latest = null;
+
+async function getLocation() {
+  if (!navigator.geolocation) return SAMPLE;
+  return await new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ name: "Your location", lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => resolve(SAMPLE),
+      { timeout: 4000 }
+    );
+  });
+}
+
+async function reverseGeo(lat, lon) {
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}`);
+    const j = await r.json();
+    const g = j.results?.[0];
+    if (g) return g.name + (g.admin1 ? ", " + g.admin1 : "");
+  } catch {}
+  return null;
+}
+
+async function fetchWeather(loc) {
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`);
+  if (!r.ok) throw new Error("Weather API failed (" + r.status + ")");
+  return await r.json();
+}
+
+function render(loc, data) {
+  latest = { loc, data, at: Date.now() };
+  renderCached();
+  localStorage.setItem(NS + ":last", JSON.stringify(latest));
+}
+function renderCached() {
+  if (!latest) return;
+  const { loc, data } = latest;
+  const cur = data.current_weather;
+  const curCode = code(cur.weathercode);
+  const sun = data.daily;
+  const days = sun.time.map((d, i) => ({ date: d, hi: sun.temperature_2m_max[i], lo: sun.temperature_2m_min[i], wc: sun.weathercode[i] }));
+  const WEEKDAY = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  document.getElementById("main").innerHTML = `
+    <div class="now">
+      <div class="glyph">${curCode.g}</div>
+      <div>
+        <div class="loc">${escapeHtml(loc.name)}</div>
+        <div class="cond">${curCode.t}</div>
+      </div>
+      <div class="temp">${cToDisplay(cur.temperature)}°</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Wind</div><div class="stat-value">${Math.round(cur.windspeed)} km/h</div></div>
+      <div class="stat"><div class="stat-label">Sunrise</div><div class="stat-value">${timeOf(sun.sunrise[0])}</div></div>
+      <div class="stat"><div class="stat-label">Sunset</div><div class="stat-value">${timeOf(sun.sunset[0])}</div></div>
+    </div>
+    <div class="forecast">
+      ${days.slice(0, 7).map((d, i) => {
+        const dt = new Date(d.date);
+        const label = i === 0 ? "Today" : WEEKDAY[dt.getUTCDay()];
+        const c = code(d.wc);
+        return `<div class="day">
+          <span class="day-name">${label}</span>
+          <span class="day-ico">${c.g}</span>
+          <span class="day-cond">${c.t}</span>
+          <span class="day-range">${cToDisplay(d.hi)}°<span class="lo">${cToDisplay(d.lo)}°</span></span>
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+  document.getElementById("updated").textContent = "Updated " + new Date(latest.at).toLocaleTimeString() + " · " + unitLbl();
+}
+function timeOf(iso) {
+  const d = new Date(iso);
+  const h = d.getHours(), m = d.getMinutes();
+  const h12 = ((h + 11) % 12) + 1;
+  return h12 + ":" + String(m).padStart(2,"0") + " " + (h < 12 ? "AM" : "PM");
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+async function load() {
+  document.getElementById("main").innerHTML = '<div class="msg">Getting your location…</div>';
+  const loc = await getLocation();
+  document.getElementById("main").innerHTML = '<div class="msg">Fetching forecast…</div>';
+  try {
+    const data = await fetchWeather(loc);
+    const better = await reverseGeo(loc.lat, loc.lon);
+    if (better) loc.name = better;
+    render(loc, data);
+  } catch (e) {
+    document.getElementById("main").innerHTML = '<div class="msg">Couldn\'t fetch weather: ' + e.message + '</div>';
+  }
+}
+
+document.getElementById("refresh").addEventListener("click", load);
+// Try to render cached while we fetch
+try {
+  const cached = JSON.parse(localStorage.getItem(NS + ":last"));
+  if (cached && (Date.now() - cached.at < 3600000)) { latest = cached; renderCached(); }
+} catch {}
+load();
+</script>
+</body>
+</html>

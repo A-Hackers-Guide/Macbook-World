@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect x="0" y="0" width="128" height="128" rx="28" ry="28" fill="#f4f4f8"/>
+  <rect x="18" y="24" width="92" height="88" rx="8" fill="#fff" stroke="#c7c9d1" stroke-width="2"/>
+  <rect x="18" y="24" width="92" height="22" rx="8" fill="#ff5a5a"/>
+  <rect x="18" y="38" width="92" height="8" fill="#ff5a5a"/>
+  <g stroke="#2a2a30" stroke-width="3" stroke-linecap="round">
+    <line x1="40" y1="18" x2="40" y2="32"/>
+    <line x1="88" y1="18" x2="88" y2="32"/>
+  </g>
+  <g fill="#9598a0" font-family="ui-sans-serif, system-ui" font-size="9" font-weight="700" text-anchor="middle">
+    <text x="30" y="60">S</text><text x="47" y="60">M</text><text x="64" y="60">T</text><text x="81" y="60">W</text><text x="98" y="60">T</text>
+  </g>
+  <g fill="#2a2a30" font-family="ui-sans-serif, system-ui" font-size="9" font-weight="700" text-anchor="middle">
+    <text x="30" y="76">1</text><text x="47" y="76">2</text><text x="64" y="76">3</text><text x="81" y="76">4</text><text x="98" y="76">5</text>
+    <text x="30" y="92">8</text><text x="47" y="92">9</text>
+  </g>
+  <circle cx="64" cy="89" r="8" fill="#ff5a5a"/>
+  <text x="64" y="93" fill="#fff" font-family="ui-sans-serif, system-ui" font-size="10" font-weight="700" text-anchor="middle">10</text>
+</svg>

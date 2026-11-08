@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Calendar</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#ff6a6a; --dim: rgba(255,255,255,.55); --row: rgba(255,255,255,.04); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; --row:#eee; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#ff3838; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; --row:#dde1e8; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#d9304b; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; --row: rgba(255,255,255,.4); }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-columns: 1fr 260px; height:100%; }
+  .cal { display:grid; grid-template-rows: auto auto 1fr; min-width: 0; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .toolbar h2 { margin:0; font-size: 20px; letter-spacing:-0.01em; }
+  .toolbar .nav { display:flex; gap:4px; }
+  .toolbar button { width:30px; height:30px; display:grid; place-content:center; border:1px solid var(--border); border-radius:6px; background:transparent; color:inherit; cursor:pointer; }
+  .toolbar button:hover { background: var(--row); }
+  .toolbar button.today { width: auto; padding: 0 12px; margin-left: 6px; }
+  body[data-era="dawn"] .toolbar button { border-radius: 0; }
+  .weekdays { display:grid; grid-template-columns: repeat(7, 1fr); padding: 6px 14px; background: var(--card); border-bottom: 1px solid var(--border); font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; text-align: center; font-weight: 600; }
+  .grid { display:grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; padding: 2px 14px 14px; gap: 2px; overflow: auto; }
+  .day { padding: 6px 8px; border-radius: 8px; cursor:pointer; min-height: 60px; display:flex; flex-direction:column; gap:3px; background: transparent; }
+  .day:hover { background: var(--row); }
+  .day .n { font-size: 13px; font-weight: 600; }
+  .day.other .n { color: var(--dim); font-weight: 400; }
+  .day.today .n { background: var(--accent); color: #fff; width: 24px; height: 24px; display: inline-grid; place-content: center; border-radius: 50%; font-size: 12px; }
+  body[data-era="dawn"] .day.today .n { border-radius: 0; background:#000; }
+  .day.selected { background: var(--row); outline: 1px solid var(--accent); }
+  .evtdot { display:flex; gap:3px; margin-top:2px; }
+  .evtdot span { width:5px; height:5px; border-radius:50%; background: var(--accent); }
+  body[data-era="dawn"] .day, body[data-era="dawn"] .day.today .n, body[data-era="dawn"] .evtdot span { border-radius: 0; }
+  .side { background: var(--card); border-left: 1px solid var(--border); padding: 14px; overflow:auto; }
+  .side h3 { margin: 0 0 6px; font-size: 16px; }
+  .side .date { color: var(--dim); font-size: 12px; margin-bottom: 14px; }
+  .evlist { display:flex; flex-direction:column; gap: 6px; margin-bottom: 14px; }
+  .ev { padding: 8px 10px; background: var(--row); border-radius: 6px; font-size: 13px; display:grid; grid-template-columns: 1fr auto; gap: 6px; align-items:center; }
+  .ev .title { font-weight: 600; }
+  .ev .time { color: var(--dim); font-size: 11px; }
+  .ev .del { background: transparent; color: var(--dim); border:0; cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .ev .del:hover { color: #ff6060; }
+  body[data-era="dawn"] .ev { border-radius: 0; }
+  .add { display:grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .add input { padding: 7px 10px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+  .add button { padding: 7px; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+  body[data-era="dawn"] .add input, body[data-era="dawn"] .add button { border-radius: 0; }
+  body[data-era="dawn"] .add button { background:#000; border:2px solid #000; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="cal">
+    <div class="toolbar">
+      <h2 id="month-label">—</h2>
+      <div class="nav">
+        <button id="prev" title="Previous month">‹</button>
+        <button id="next" title="Next month">›</button>
+        <button class="today" id="today">Today</button>
+      </div>
+    </div>
+    <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <aside class="side">
+    <h3 id="sel-day">—</h3>
+    <div class="date" id="sel-date">—</div>
+    <div class="evlist" id="evlist"></div>
+    <div class="add">
+      <input id="ev-title" placeholder="Event name" autocomplete="off" />
+      <input id="ev-time" type="time" />
+      <button id="ev-add">Add event</button>
+    </div>
+  </aside>
+</div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1:calendar";
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WEEKDAY_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+let view = startOfMonth(new Date());
+let selected = new Date();
+
+function load() { try { return JSON.parse(localStorage.getItem(NS)) || {}; } catch { return {}; } }
+function save(obj) { localStorage.setItem(NS, JSON.stringify(obj)); }
+
+function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function iso(d) { return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function same(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+
+function renderMonth() {
+  document.getElementById("month-label").textContent = MONTHS[view.getMonth()] + " " + view.getFullYear();
+  const start = new Date(view);
+  const firstDay = start.getDay();
+  const gridStart = new Date(start); gridStart.setDate(start.getDate() - firstDay);
+  const events = load();
+  const today = new Date();
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart); d.setDate(gridStart.getDate() + i);
+    const other = d.getMonth() !== view.getMonth();
+    const key = iso(d);
+    const cnt = (events[key] || []).length;
+    const el = document.createElement("div");
+    el.className = "day" + (other ? " other" : "") + (same(d, today) ? " today" : "") + (same(d, selected) ? " selected" : "");
+    el.innerHTML = `<span class="n">${d.getDate()}</span>` + (cnt ? `<div class="evtdot">${"<span></span>".repeat(Math.min(3, cnt))}</div>` : "");
+    el.addEventListener("click", () => { selected = new Date(d); renderMonth(); renderSide(); });
+    grid.appendChild(el);
+  }
+}
+
+function renderSide() {
+  const key = iso(selected);
+  document.getElementById("sel-day").textContent = WEEKDAY_LONG[selected.getDay()];
+  document.getElementById("sel-date").textContent = MONTHS[selected.getMonth()] + " " + selected.getDate() + ", " + selected.getFullYear();
+  const list = load()[key] || [];
+  const el = document.getElementById("evlist");
+  el.innerHTML = "";
+  if (list.length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:10px 0;">No events for this day.</div>';
+  }
+  list.sort((a,b) => (a.time||"").localeCompare(b.time||""));
+  for (const e of list) {
+    const d = document.createElement("div"); d.className = "ev";
+    d.innerHTML = `<div><div class="title">${escapeHtml(e.title)}</div><div class="time">${escapeHtml(e.time || "No time")}</div></div><button class="del" data-id="${e.id}">×</button>`;
+    el.appendChild(d);
+  }
+  el.querySelectorAll(".del").forEach(b => b.addEventListener("click", () => {
+    const events = load();
+    events[key] = (events[key] || []).filter(e => e.id !== b.dataset.id);
+    if (events[key].length === 0) delete events[key];
+    save(events);
+    renderSide(); renderMonth();
+  }));
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+document.getElementById("prev").addEventListener("click", () => { view.setMonth(view.getMonth() - 1); renderMonth(); });
+document.getElementById("next").addEventListener("click", () => { view.setMonth(view.getMonth() + 1); renderMonth(); });
+document.getElementById("today").addEventListener("click", () => { view = startOfMonth(new Date()); selected = new Date(); renderMonth(); renderSide(); });
+document.getElementById("ev-add").addEventListener("click", () => {
+  const title = document.getElementById("ev-title").value.trim();
+  if (!title) return;
+  const time = document.getElementById("ev-time").value;
+  const events = load();
+  const key = iso(selected);
+  events[key] = events[key] || [];
+  events[key].push({ id: Date.now().toString(36), title, time });
+  save(events);
+  document.getElementById("ev-title").value = "";
+  document.getElementById("ev-time").value = "";
+  renderSide(); renderMonth();
+});
+document.getElementById("ev-title").addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("ev-add").click(); });
+
+renderMonth(); renderSide();
+</script>
+</body>
+</html>

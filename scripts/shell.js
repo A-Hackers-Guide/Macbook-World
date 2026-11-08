@@ -97,6 +97,7 @@ menus.prism.querySelectorAll("[data-cmd]").forEach((li) => {
         SetupState.reset();
         location.reload();
         break;
+      case "lock":       lockScreen(); break;
       case "shutdown":
         if (confirm("Shut down Prism OS?")) {
           document.body.style.transition = "opacity .5s";
@@ -107,6 +108,107 @@ menus.prism.querySelectorAll("[data-cmd]").forEach((li) => {
     }
   });
 });
+
+/* ---------- Spotlight ---------- */
+
+const spotlightEl = document.getElementById("spotlight");
+const spotInput = document.getElementById("spotlight-input");
+const spotResults = document.getElementById("spotlight-results");
+
+function spotlightItems() {
+  const items = [];
+  for (const app of APPS) items.push({ kind: "App", label: app.name, icon: app.icon, run: () => openApp(app.id) });
+  for (const e of ERAS) items.push({ kind: "Era", label: `Switch to ${e.name}`, glyph: "◆", run: () => { State.set("last-era", e.id); location.href = `desktop.html?era=${encodeURIComponent(e.id)}`; } });
+  items.push({ kind: "Action", label: "Lock Screen", glyph: "⌾", run: () => lockScreen() });
+  items.push({ kind: "Action", label: "Choose Era…", glyph: "✧", run: () => (location.href = "index.html") });
+  items.push({ kind: "Action", label: "Reset Setup Assistant", glyph: "⟲", run: () => { SetupState.reset(); location.reload(); } });
+  items.push({ kind: "Action", label: "Shut Down", glyph: "⏻", run: () => { document.body.style.transition = "opacity .5s"; document.body.style.opacity = 0; setTimeout(() => (location.href = "index.html"), 500); } });
+  return items;
+}
+
+function spotlightOpen() {
+  spotlightEl.hidden = false;
+  spotInput.value = "";
+  spotlightRender("");
+  setTimeout(() => spotInput.focus(), 20);
+}
+function spotlightClose() { spotlightEl.hidden = true; }
+
+function spotlightRender(query) {
+  const q = query.trim().toLowerCase();
+  const items = spotlightItems();
+  const matches = q ? items.filter((x) => x.label.toLowerCase().includes(q)) : items.slice(0, 12);
+  spotResults.innerHTML = "";
+  matches.forEach((it, i) => {
+    const n = document.createElement("div");
+    n.className = "spot-item" + (i === 0 ? " active" : "");
+    const left = it.icon ? `<img src="${it.icon}" alt="">` : `<span class="spot-glyph">${it.glyph || "▸"}</span>`;
+    n.innerHTML = `${left}<span>${it.label}</span><span class="spot-kind">${it.kind}</span>`;
+    n.addEventListener("click", () => { it.run(); spotlightClose(); });
+    spotResults.appendChild(n);
+  });
+}
+
+spotInput?.addEventListener("input", () => spotlightRender(spotInput.value));
+spotInput?.addEventListener("keydown", (e) => {
+  const items = [...spotResults.querySelectorAll(".spot-item")];
+  const idx = items.findIndex((x) => x.classList.contains("active"));
+  if (e.key === "ArrowDown") {
+    if (idx >= 0) items[idx].classList.remove("active");
+    items[Math.min(items.length - 1, idx + 1)]?.classList.add("active");
+    items[Math.min(items.length - 1, idx + 1)]?.scrollIntoView({ block: "nearest" });
+    e.preventDefault();
+  } else if (e.key === "ArrowUp") {
+    if (idx >= 0) items[idx].classList.remove("active");
+    items[Math.max(0, idx - 1)]?.classList.add("active");
+    items[Math.max(0, idx - 1)]?.scrollIntoView({ block: "nearest" });
+    e.preventDefault();
+  } else if (e.key === "Enter") {
+    items[idx]?.click();
+    e.preventDefault();
+  } else if (e.key === "Escape") {
+    spotlightClose();
+  }
+});
+spotlightEl?.addEventListener("click", (e) => { if (e.target === spotlightEl) spotlightClose(); });
+
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); spotlightOpen(); }
+});
+document.getElementById("search-btn")?.addEventListener("click", (e) => { e.stopPropagation(); spotlightOpen(); });
+
+/* ---------- Lock screen ---------- */
+
+const lockEl = document.getElementById("lockscreen");
+const lockTime = document.getElementById("lock-time");
+const lockDate = document.getElementById("lock-date");
+let lockTick = null;
+
+function lockScreen() {
+  updateLockClock();
+  lockEl.hidden = false;
+  requestAnimationFrame(() => lockEl.classList.add("show"));
+  lockTick = setInterval(updateLockClock, 1000);
+  setTimeout(() => {
+    document.addEventListener("keydown", unlockOnce, { once: true });
+    lockEl.addEventListener("click", unlockOnce, { once: true });
+  }, 400);
+}
+function unlockOnce() {
+  lockEl.classList.remove("show");
+  if (lockTick) clearInterval(lockTick);
+  setTimeout(() => { lockEl.hidden = true; }, 350);
+}
+function updateLockClock() {
+  const d = new Date();
+  const h12 = ((d.getHours() + 11) % 12) + 1;
+  const am = d.getHours() < 12 ? "AM" : "PM";
+  lockTime.textContent = `${h12}:${pad(d.getMinutes())} ${am}`;
+  lockDate.textContent = `${DAYS[d.getDay()]}day · ${MONTHS[d.getMonth()]} ${d.getDate()}`.replace("Sunday", "Sunday").replace(/day\w+/, "day");
+  // Nicer date
+  const weekdays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  lockDate.textContent = `${weekdays[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
 
 /* ---------- Dock ---------- */
 

@@ -26,6 +26,11 @@
 
     <span class="menubar__spacer"></span>
 
+    <button class="menubar__icon" id="search-btn" aria-label="Search">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="6"/><line x1="15.5" y1="15.5" x2="20" y2="20"/>
+      </svg>
+    </button>
     <button class="menubar__icon" data-menu="control" aria-label="Control center">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="7" cy="7" r="2.6"/>
@@ -54,6 +59,7 @@
       <li role="menuitem" data-cmd="era-picker"><span>Choose Era…</span></li>
       <li role="menuitem" data-cmd="reset-setup"><span>Reset Setup Assistant</span></li>
       <li class="divider" role="separator"></li>
+      <li role="menuitem" data-cmd="lock"><span>Lock Screen</span></li>
       <li role="menuitem" data-cmd="shutdown"><span>Shut Down…</span></li>
     </ul>
   </div>
@@ -89,6 +95,25 @@
     <div class="cc__slider">
       <span class="cc__icon" aria-hidden="true">♪</span>
       <input type="range" min="0" max="100" value="60" id="cc-volume" aria-label="Volume"/>
+    </div>
+  </div>
+
+  <!-- Spotlight -->
+  <div id="spotlight" hidden>
+    <div class="spot-panel">
+      <input id="spotlight-input" placeholder="Search apps, eras, actions…" autocomplete="off" spellcheck="false"/>
+      <div id="spotlight-results"></div>
+      <div class="spot-hint">↑↓ navigate · Return pick · Esc close · ⌘K from anywhere</div>
+    </div>
+  </div>
+
+  <!-- Lock screen -->
+  <div id="lockscreen" hidden>
+    <div class="lock-content">
+      <img class="lock-mascot" src="assets/icons/mascot.svg" alt=""/>
+      <div class="lock-time" id="lock-time">—</div>
+      <div class="lock-date" id="lock-date">—</div>
+      <div class="lock-hint">Click or press any key to unlock</div>
     </div>
   </div>
 
