@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Prism OS</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icons/mascot.svg" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/shell.css" />
+  <link id="era-stylesheet" rel="stylesheet" href="" />
+</head>
+<body class="phase-desktop" data-era="">
+  <div id="wallpaper" aria-hidden="true"></div>
+
+  <nav id="menubar" role="menubar" aria-label="Menu bar">
+    <button class="menubar__prism" data-menu="prism" aria-haspopup="menu" aria-label="Prism menu">
+      <img src="assets/icons/mascot.svg" alt="" />
+    </button>
+    <strong class="menubar__app-name" id="active-app-name">Prism</strong>
+    <button class="menubar__item" data-menu="file">File</button>
+    <button class="menubar__item" data-menu="edit">Edit</button>
+    <button class="menubar__item" data-menu="view">View</button>
+    <button class="menubar__item" data-menu="window">Window</button>
+    <button class="menubar__item" data-menu="help">Help</button>
+
+    <span class="menubar__spacer"></span>
+
+    <button class="menubar__icon" data-menu="control" aria-label="Control center">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="7" cy="7" r="2.6"/>
+        <line x1="12" y1="7" x2="20" y2="7"/>
+        <circle cx="17" cy="17" r="2.6"/>
+        <line x1="4" y1="17" x2="12" y2="17"/>
+      </svg>
+    </button>
+    <button class="menubar__item" data-menu="notifications" aria-label="Notifications">
+      <time id="menubar-date"></time>
+      <time id="menubar-clock"></time>
+    </button>
+  </nav>
+
+  <div id="desktop"></div>
+
+  <nav id="dock" role="toolbar" aria-label="Dock"></nav>
+
+  <!-- Prism menu -->
+  <div id="prism-menu" class="dropdown" hidden>
+    <ul role="menu">
+      <li role="menuitem" data-cmd="about"><span>About This Prism</span></li>
+      <li class="divider" role="separator"></li>
+      <li role="menuitem" data-cmd="settings"><span>System Settings…</span></li>
+      <li class="divider" role="separator"></li>
+      <li role="menuitem" data-cmd="era-picker"><span>Choose Era…</span></li>
+      <li role="menuitem" data-cmd="reset-setup"><span>Reset Setup Assistant</span></li>
+      <li class="divider" role="separator"></li>
+      <li role="menuitem" data-cmd="shutdown"><span>Shut Down…</span></li>
+    </ul>
+  </div>
+
+  <!-- Control center -->
+  <div id="control-center" class="dropdown dropdown--panel" hidden>
+    <div class="cc__grid">
+      <button class="cc__tile cc__tile--toggle" data-cc="theme">
+        <span class="cc__icon" aria-hidden="true">◐</span>
+        <span class="cc__label">Theme</span>
+        <span class="cc__val" id="cc-theme">Auto</span>
+      </button>
+      <button class="cc__tile cc__tile--toggle" data-cc="wifi">
+        <span class="cc__icon" aria-hidden="true">≋</span>
+        <span class="cc__label">Wi-Fi</span>
+        <span class="cc__val">On</span>
+      </button>
+      <button class="cc__tile cc__tile--toggle" data-cc="bluetooth">
+        <span class="cc__icon" aria-hidden="true">✶</span>
+        <span class="cc__label">Bluetooth</span>
+        <span class="cc__val">Off</span>
+      </button>
+      <button class="cc__tile cc__tile--toggle" data-cc="focus">
+        <span class="cc__icon" aria-hidden="true">◉</span>
+        <span class="cc__label">Focus</span>
+        <span class="cc__val">Off</span>
+      </button>
+    </div>
+    <div class="cc__slider">
+      <span class="cc__icon" aria-hidden="true">☀</span>
+      <input type="range" min="0" max="100" value="80" id="cc-brightness" aria-label="Brightness"/>
+    </div>
+    <div class="cc__slider">
+      <span class="cc__icon" aria-hidden="true">♪</span>
+      <input type="range" min="0" max="100" value="60" id="cc-volume" aria-label="Volume"/>
+    </div>
+  </div>
+
+  <!-- Window template -->
+  <template id="window-template">
+    <section class="window" tabindex="0">
+      <header class="window__chrome">
+        <div class="window__traffic">
+          <button class="t t--close" data-win="close" aria-label="Close window"><span></span></button>
+          <button class="t t--min"   data-win="min"   aria-label="Minimize window"><span></span></button>
+          <button class="t t--zoom"  data-win="zoom"  aria-label="Zoom window"><span></span></button>
+        </div>
+        <span class="window__title"></span>
+      </header>
+      <iframe class="window__frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads" title=""></iframe>
+      <div class="window__resize" data-win="resize" aria-hidden="true"></div>
+    </section>
+  </template>
+
+  <script type="module" src="scripts/shell.js"></script>
+</body>
+</html>

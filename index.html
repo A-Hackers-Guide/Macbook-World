@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Prism OS</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icons/mascot.svg" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/boot.css" />
+</head>
+<body class="phase-boot">
+  <main id="boot-stage" aria-hidden="false">
+    <div class="mascot" aria-label="Prism mascot">
+      <object type="image/svg+xml" data="assets/icons/mascot.svg" aria-hidden="true"></object>
+    </div>
+    <div class="boot-progress" role="progressbar" aria-label="Booting">
+      <div class="boot-progress__fill"></div>
+    </div>
+  </main>
+
+  <main id="picker-stage" hidden>
+    <header class="picker__head">
+      <h1>Pick an era</h1>
+      <p>Four decades. Four aesthetics. One desktop each.</p>
+    </header>
+    <div class="era-grid" role="list"></div>
+    <footer class="picker__foot">
+      <small>Prism OS is an original work of parody fiction. Not affiliated with any computer company.</small>
+    </footer>
+  </main>
+
+  <template id="era-card-template">
+    <button class="era-card" role="listitem" type="button">
+      <div class="era-card__art"></div>
+      <div class="era-card__meta">
+        <span class="era-card__name"></span>
+        <span class="era-card__year"></span>
+      </div>
+      <p class="era-card__desc"></p>
+    </button>
+  </template>
+
+  <script type="module" src="scripts/boot.js"></script>
+</body>
+</html>

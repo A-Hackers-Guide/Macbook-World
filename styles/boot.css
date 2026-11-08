@@ -1,0 +1,159 @@
+/* ---- Boot screen + era picker ---- */
+
+.phase-boot {
+  background: radial-gradient(ellipse at center, #1a1a22 0%, #000 80%);
+}
+
+#boot-stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 48px;
+  animation: boot-in .8s var(--ease);
+}
+
+#boot-stage.leaving { animation: boot-out .6s var(--ease) forwards; }
+
+.mascot {
+  width: 148px;
+  height: 148px;
+  display: grid;
+  place-content: center;
+  filter: drop-shadow(0 12px 32px rgba(120,160,255,.35));
+  animation: mascot-pulse 2.4s ease-in-out infinite;
+}
+.mascot object { width: 100%; height: 100%; pointer-events: none; }
+
+.boot-progress {
+  width: 220px;
+  height: 4px;
+  background: rgba(255,255,255,.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+.boot-progress__fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #7aa8ff, #c5a4ff, #ffb3d0);
+  animation: boot-fill 2.6s var(--ease) forwards;
+}
+
+@keyframes boot-in {
+  from { opacity: 0; transform: scale(.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes boot-out {
+  to { opacity: 0; transform: scale(1.06); }
+}
+@keyframes mascot-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+@keyframes boot-fill {
+  to { width: 100%; }
+}
+
+/* ---- Era picker ---- */
+body.phase-picker {
+  background: radial-gradient(1200px 800px at 20% 10%, #1b1f3d 0%, #090a14 55%, #000 100%);
+}
+
+#picker-stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 48px 32px;
+  gap: 24px;
+  animation: picker-in .6s var(--ease);
+}
+
+@keyframes picker-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.picker__head {
+  text-align: center;
+}
+.picker__head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 48px);
+  margin: 0;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #e7ecff 0%, #c7b4ff 50%, #ff9ec7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.picker__head p {
+  color: var(--surface-ink-dim);
+  margin: 8px 0 0;
+}
+
+.era-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  align-self: center;
+}
+
+.era-card {
+  position: relative;
+  text-align: left;
+  display: grid;
+  grid-template-rows: 150px auto auto;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  transition: transform .25s var(--ease), background .25s, border-color .25s;
+}
+.era-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255,255,255,.07);
+  border-color: rgba(255,255,255,.18);
+}
+.era-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.era-card__art {
+  border-radius: var(--radius-md);
+  background: #222;
+  overflow: hidden;
+  position: relative;
+}
+.era-card__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 4px;
+}
+.era-card__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+.era-card__year {
+  color: var(--surface-ink-dim);
+  font-size: 12px;
+}
+.era-card__desc {
+  color: var(--surface-ink-dim);
+  font-size: 13px;
+  margin: 0 4px 6px;
+  line-height: 1.45;
+}
+
+.picker__foot {
+  text-align: center;
+  color: var(--surface-ink-dim);
+  font-size: 11px;
+}
