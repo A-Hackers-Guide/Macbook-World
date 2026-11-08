@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Minesweeper</title>
+<style>
+  :root { color-scheme: dark; --bg:#1c1c22; --fg:#f4f4f6; --cell: rgba(255,255,255,.08); --cell-up: rgba(255,255,255,.14); --cell-down: rgba(255,255,255,.03); --border: rgba(255,255,255,.1); --accent:#ff9f3f; }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --cell:#eee; --cell-up:#ddd; --cell-down:#f8f8f8; --border:#000; --accent:#000; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#c8ccd4; --fg:#111; --cell:#e9ebf0; --cell-up:#dcdfe6; --cell-down:#f1f3f8; --border:#70737e; --accent:#3c66ff; }
+  body[data-era="dusk"] { --bg:#8eb0dc; --fg:#10224a; --cell:#cfe0f9; --cell-up:#b7cff4; --cell-down:#f3f6fb; --border:#3760a5; --accent:#1a66d9; }
+  body[data-era="primeval"] { --bg:#0a1a0a; --fg:#78ff78; --cell: rgba(120,255,120,.1); --cell-up: rgba(120,255,120,.2); --cell-down: rgba(120,255,120,.02); --border: rgba(120,255,120,.4); --accent:#dfffdf; font-family: ui-monospace, Menlo, monospace; }
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-rows: auto 1fr; height:100%; padding: 14px; gap: 12px; }
+  .hud { display:flex; justify-content:space-between; align-items:center; padding: 6px 10px; }
+  .hud .counter { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); font-family: ui-monospace, Menlo, monospace; }
+  .hud button { font: inherit; padding: 6px 14px; background: var(--cell); border: 1px solid var(--border); border-radius: 8px; color: inherit; cursor: pointer; }
+  body[data-era="dawn"] .hud button { border-radius: 0; }
+  .hud button:hover { background: var(--cell-up); }
+  .board { display: grid; place-content: center; }
+  .grid { display: grid; gap: 2px; }
+  .cell {
+    width: 32px; height: 32px;
+    background: var(--cell);
+    border: 1px solid var(--border);
+    display: grid; place-content: center;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: ui-monospace, Menlo, monospace;
+    border-radius: 4px;
+  }
+  body[data-era="dawn"] .cell { border-radius: 0; }
+  .cell:hover:not(.revealed) { background: var(--cell-up); }
+  .cell.revealed { background: var(--cell-down); cursor: default; }
+  .cell.mine { background: #ff5a6a; color: #fff; }
+  .cell.flag { color: var(--accent); }
+  .n-1 { color: #5faaff; } .n-2 { color: #78d58b; } .n-3 { color: #ff7a7a; }
+  .n-4 { color: #a68cff; } .n-5 { color: #ffb258; } .n-6 { color: #4ac7cf; }
+  .n-7 { color: #dddddd; } .n-8 { color: #ff9f3f; }
+  .difficulties { display: flex; gap: 4px; }
+  .difficulties button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  body[data-era="dawn"] .difficulties button.active { background:#000; color:#fff; }
+  body[data-era="primeval"] .difficulties button.active { background: #78ff78; color: #0a1a0a; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hud">
+    <div class="counter" id="mines">💣 15</div>
+    <div class="difficulties">
+      <button data-d="9,9,10" class="active">Easy</button>
+      <button data-d="16,16,40">Medium</button>
+      <button data-d="24,16,99">Hard</button>
+    </div>
+    <div class="counter" id="timer">⏱ 000</div>
+    <button id="reset">New Game</button>
+  </div>
+  <div class="board"><div class="grid" id="grid"></div></div>
+</div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+let W = 9, H = 9, MINES = 10;
+let board = []; let revealed = 0; let flags = 0;
+let started = false; let over = false;
+let startTime = 0; let timerHandle = null;
+
+const gridEl = document.getElementById("grid");
+const timerEl = document.getElementById("timer");
+const minesEl = document.getElementById("mines");
+
+function pad3(n) { return String(n).padStart(3, "0"); }
+
+function init() {
+  board = Array.from({length: H}, () => Array.from({length: W}, () => ({ mine:false, revealed:false, flag:false, n:0 })));
+  revealed = 0; flags = 0; started = false; over = false;
+  startTime = 0; clearInterval(timerHandle); timerEl.textContent = "⏱ 000";
+  minesEl.textContent = "💣 " + MINES;
+  render();
+}
+function placeMines(sx, sy) {
+  // Place mines avoiding (sx, sy) and its neighbours
+  const safe = new Set();
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const nx = sx+dx, ny = sy+dy;
+    if (nx>=0&&nx<W&&ny>=0&&ny<H) safe.add(ny*W+nx);
+  }
+  let placed = 0;
+  while (placed < MINES) {
+    const i = Math.floor(Math.random() * W*H);
+    if (safe.has(i)) continue;
+    const x = i%W, y = Math.floor(i/W);
+    if (board[y][x].mine) continue;
+    board[y][x].mine = true;
+    placed++;
+  }
+  // Compute neighbor counts
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (board[y][x].mine) continue;
+    let n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nx = x+dx, ny = y+dy;
+      if (nx>=0&&nx<W&&ny>=0&&ny<H && board[ny][nx].mine) n++;
+    }
+    board[y][x].n = n;
+  }
+}
+function render() {
+  gridEl.style.gridTemplateColumns = `repeat(${W}, 32px)`;
+  gridEl.innerHTML = "";
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const c = board[y][x];
+    const el = document.createElement("div");
+    el.className = "cell";
+    el.dataset.x = x; el.dataset.y = y;
+    if (c.revealed) {
+      el.classList.add("revealed");
+      if (c.mine) { el.classList.add("mine"); el.textContent = "💣"; }
+      else if (c.n > 0) { el.textContent = c.n; el.classList.add("n-" + c.n); }
+    } else if (c.flag) {
+      el.classList.add("flag"); el.textContent = "⚑";
+    }
+    el.addEventListener("click", onClick);
+    el.addEventListener("contextmenu", onRightClick);
+    gridEl.appendChild(el);
+  }
+}
+function onClick(e) {
+  if (over) return;
+  const x = +e.currentTarget.dataset.x, y = +e.currentTarget.dataset.y;
+  const c = board[y][x];
+  if (c.flag) return;
+  if (!started) { started = true; placeMines(x, y); startTimer(); }
+  if (c.mine) { c.revealed = true; boom(); return; }
+  flood(x, y);
+  render();
+  checkWin();
+}
+function onRightClick(e) {
+  e.preventDefault();
+  if (over) return;
+  const x = +e.currentTarget.dataset.x, y = +e.currentTarget.dataset.y;
+  const c = board[y][x];
+  if (c.revealed) return;
+  c.flag = !c.flag;
+  flags += c.flag ? 1 : -1;
+  minesEl.textContent = "💣 " + (MINES - flags);
+  render();
+}
+function flood(x, y) {
+  const stack = [[x,y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    if (cx<0||cx>=W||cy<0||cy>=H) continue;
+    const c = board[cy][cx];
+    if (c.revealed || c.flag || c.mine) continue;
+    c.revealed = true; revealed++;
+    if (c.n === 0) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        stack.push([cx+dx, cy+dy]);
+      }
+    }
+  }
+}
+function boom() {
+  over = true;
+  clearInterval(timerHandle);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (board[y][x].mine) board[y][x].revealed = true;
+  render();
+  setTimeout(() => alert("Boom! Try again?"), 50);
+}
+function checkWin() {
+  if (revealed === W*H - MINES) {
+    over = true;
+    clearInterval(timerHandle);
+    setTimeout(() => alert("You cleared the board in " + Math.floor((Date.now() - startTime)/1000) + "s!"), 50);
+  }
+}
+function startTimer() {
+  startTime = Date.now();
+  timerHandle = setInterval(() => {
+    timerEl.textContent = "⏱ " + pad3(Math.min(999, Math.floor((Date.now() - startTime)/1000)));
+  }, 500);
+}
+document.getElementById("reset").addEventListener("click", init);
+document.querySelectorAll(".difficulties button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".difficulties button").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  const [w,h,m] = b.dataset.d.split(",").map(Number);
+  W = w; H = h; MINES = m;
+  init();
+}));
+init();
+</script>
+</body>
+</html>

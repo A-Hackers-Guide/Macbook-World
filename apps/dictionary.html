@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Dictionary</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#5faaff; --dim: rgba(255,255,255,.55); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.3); --dim:#334a7a; }
+  body[data-era="primeval"] { --bg:#0a1a0a; --fg:#78ff78; --accent:#dfffdf; --card: rgba(120,255,120,.05); --border: rgba(120,255,120,.2); --dim: rgba(120,255,120,.55); font-family: ui-monospace, Menlo, monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow: hidden; }
+  .app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+  .search { display: flex; gap: 8px; padding: 14px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .search input { flex: 1; padding: 10px 14px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 999px; font: inherit; outline: none; }
+  .search input:focus { border-color: var(--accent); }
+  body[data-era="dawn"] .search input, body[data-era="dawn"] .search button, body[data-era="dawn"] .side button { border-radius: 0; }
+  .search button { padding: 10px 18px; background: var(--accent); color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
+
+  .body { display: grid; grid-template-columns: 180px 1fr; min-height: 0; }
+  .side { padding: 14px; background: var(--card); border-right: 1px solid var(--border); overflow: auto; }
+  .side h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .side button { display: block; width: 100%; text-align: left; padding: 6px 10px; background: transparent; color: inherit; border: 0; cursor: pointer; border-radius: 6px; font: inherit; font-size: 13px; margin-bottom: 2px; }
+  .side button:hover { background: rgba(255,255,255,.08); }
+
+  .result { padding: 20px 26px; overflow: auto; }
+  .word { font-size: 32px; font-weight: 700; letter-spacing: -0.01em; }
+  .phon { color: var(--dim); font-size: 14px; margin-top: 4px; display: flex; align-items: center; gap: 10px; }
+  .phon button { background: transparent; border: 1px solid var(--border); color: inherit; border-radius: 999px; font-size: 11px; padding: 2px 8px; cursor: pointer; }
+  body[data-era="dawn"] .phon button { border-radius: 0; }
+  section.meaning { margin-top: 20px; }
+  .pos { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 8px; }
+  .def { padding: 10px 0; border-top: 1px solid var(--border); display: grid; grid-template-columns: 24px 1fr; gap: 10px; }
+  .def-n { color: var(--dim); font-weight: 600; font-size: 12px; text-align: right; padding-top: 2px; }
+  .def-ex { color: var(--dim); font-style: italic; margin-top: 4px; font-size: 13px; }
+  .msg { text-align: center; color: var(--dim); padding: 60px 20px; }
+  .err { color: #ff8b8b; }
+</style>
+</head>
+<body>
+<div class="app">
+  <form class="search" id="form">
+    <input type="text" id="input" placeholder="Look up a word…" autocomplete="off" />
+    <button type="submit">Look up</button>
+  </form>
+  <div class="body">
+    <aside class="side">
+      <h3>Recent</h3>
+      <div id="recent"></div>
+    </aside>
+    <main class="result" id="result">
+      <div class="msg">Type a word to begin. Dictionary data from <em>dictionaryapi.dev</em>.</div>
+    </main>
+  </div>
+</div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1:dict";
+
+let recent = [];
+try { recent = JSON.parse(localStorage.getItem(NS + ":recent")) || []; } catch {}
+
+const input = document.getElementById("input");
+const form = document.getElementById("form");
+const result = document.getElementById("result");
+const recentEl = document.getElementById("recent");
+
+form.addEventListener("submit", (e) => { e.preventDefault(); const w = input.value.trim(); if (w) lookup(w); });
+
+function renderRecent() {
+  recentEl.innerHTML = "";
+  if (!recent.length) { recentEl.innerHTML = '<div style="color:var(--dim);font-size:12px;">No lookups yet.</div>'; return; }
+  for (const w of recent.slice(0, 20)) {
+    const b = document.createElement("button");
+    b.textContent = w;
+    b.addEventListener("click", () => { input.value = w; lookup(w); });
+    recentEl.appendChild(b);
+  }
+}
+renderRecent();
+
+async function lookup(w) {
+  result.innerHTML = '<div class="msg">Looking up <strong>' + escapeHtml(w) + '</strong>…</div>';
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`);
+    if (!r.ok) throw new Error(r.status === 404 ? "No definition found" : "API error " + r.status);
+    const j = await r.json();
+    const first = Array.isArray(j) ? j[0] : null;
+    if (!first) throw new Error("No definition found");
+    render(first);
+    // persist recent
+    recent = [w, ...recent.filter(x => x.toLowerCase() !== w.toLowerCase())].slice(0, 20);
+    localStorage.setItem(NS + ":recent", JSON.stringify(recent));
+    renderRecent();
+  } catch (e) {
+    result.innerHTML = '<div class="msg err">' + escapeHtml(e.message || String(e)) + '</div>';
+  }
+}
+
+function render(entry) {
+  const phon = (entry.phonetics || []).find(p => p.text) || {};
+  const audio = (entry.phonetics || []).find(p => p.audio) || {};
+  const meaningsHtml = (entry.meanings || []).map(m => `
+    <section class="meaning">
+      <div class="pos">${escapeHtml(m.partOfSpeech || "")}</div>
+      ${(m.definitions || []).map((d, i) => `
+        <div class="def">
+          <div class="def-n">${i+1}.</div>
+          <div>
+            ${escapeHtml(d.definition || "")}
+            ${d.example ? `<div class="def-ex">"${escapeHtml(d.example)}"</div>` : ""}
+          </div>
+        </div>
+      `).join("")}
+    </section>
+  `).join("");
+  result.innerHTML = `
+    <div class="word">${escapeHtml(entry.word)}</div>
+    <div class="phon">
+      <span>${escapeHtml(phon.text || "")}</span>
+      ${audio.audio ? `<button id="play">▶ Play</button>` : ""}
+    </div>
+    ${meaningsHtml}
+  `;
+  if (audio.audio) {
+    document.getElementById("play").addEventListener("click", () => { new Audio(audio.audio).play().catch(()=>{}); });
+  }
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+input.focus();
+</script>
+</body>
+</html>

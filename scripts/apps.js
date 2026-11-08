@@ -124,6 +124,22 @@ export const APPS = [
     defaultSize: { w: 540, h: 620 },
   },
   {
+    id: "minesweeper",
+    name: "Minesweeper",
+    icon: "assets/icons/minesweeper.svg",
+    url: "apps/minesweeper.html",
+    dock: true,
+    defaultSize: { w: 540, h: 580 },
+  },
+  {
+    id: "dictionary",
+    name: "Dictionary",
+    icon: "assets/icons/dictionary.svg",
+    url: "apps/dictionary.html",
+    dock: true,
+    defaultSize: { w: 720, h: 540 },
+  },
+  {
     id: "about",
     name: "About This Prism",
     icon: "assets/icons/about.svg",
