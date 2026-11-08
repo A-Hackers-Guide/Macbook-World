@@ -108,6 +108,22 @@ export const APPS = [
     defaultSize: { w: 820, h: 540 },
   },
   {
+    id: "mail",
+    name: "Mail",
+    icon: "assets/icons/mail.svg",
+    url: "apps/mail.html",
+    dock: true,
+    defaultSize: { w: 900, h: 560 },
+  },
+  {
+    id: "snake",
+    name: "Snake",
+    icon: "assets/icons/snake.svg",
+    url: "apps/snake.html",
+    dock: true,
+    defaultSize: { w: 540, h: 620 },
+  },
+  {
     id: "about",
     name: "About This Prism",
     icon: "assets/icons/about.svg",

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="scan" cx="0.5" cy="0.5" r="0.7">
+      <stop offset="0" stop-color="#0d1f0d"/>
+      <stop offset="1" stop-color="#030a03"/>
+    </radialGradient>
+    <pattern id="scanlines" x="0" y="0" width="1" height="3" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="1" height="1" fill="#78ff78" opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#scan)"/>
+  <rect width="1920" height="1080" fill="url(#scanlines)"/>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="20" fill="#78ff78" opacity="0.6">
+    <text x="40" y="60">PRISM OS 0.1 (PRIMEVAL)</text>
+    <text x="40" y="90">READY.</text>
+    <text x="40" y="120">_</text>
+    <text x="40" y="200">10 PRINT "HELLO"</text>
+    <text x="40" y="230">20 GOTO 10</text>
+    <text x="40" y="260">RUN</text>
+    <text x="40" y="310">HELLO</text>
+    <text x="40" y="340">HELLO</text>
+    <text x="40" y="370">HELLO</text>
+    <text x="40" y="400">HELLO</text>
+    <text x="40" y="430">HELLO</text>
+    <text x="40" y="460">HELLO</text>
+    <text x="40" y="490">HELLO</text>
+    <text x="40" y="520">HELLO</text>
+    <text x="40" y="550" opacity="0.4">BREAK</text>
+    <text x="40" y="580">READY.</text>
+  </g>
+  <g fill="#78ff78">
+    <rect x="40" y="610" width="10" height="20" opacity="0.8">
+      <animate attributeName="opacity" values="0.8;0.1;0.8" dur="1s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+</svg>

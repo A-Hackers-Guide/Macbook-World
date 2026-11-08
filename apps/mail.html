@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Mail</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#5faaff; --dim: rgba(255,255,255,.55); --row: rgba(255,255,255,.04); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; --row:#eee; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; --row:#dde1e8; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; --row: rgba(255,255,255,.4); }
+  body[data-era="primeval"] { --bg:#0a1a0a; --fg:#78ff78; --card: rgba(120,255,120,.06); --border: rgba(120,255,120,.15); --accent:#dfffdf; --dim: rgba(120,255,120,.55); --row: rgba(120,255,120,.04); font-family: ui-monospace, Menlo, monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-columns: 170px 280px 1fr; height:100%; }
+  .folders { background: var(--card); border-right: 1px solid var(--border); padding: 14px 8px; }
+  .folders h3 { margin: 6px 10px 6px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .folder { display:flex; justify-content:space-between; padding: 7px 10px; border-radius: 6px; cursor:pointer; font-size:13px; }
+  .folder:hover { background: var(--row); }
+  .folder.active { background: var(--accent); color: #fff; }
+  body[data-era="dawn"] .folder { border-radius: 0; border: 1px solid transparent; }
+  body[data-era="dawn"] .folder.active { background: #000; color: #fff; }
+  .count { color: var(--dim); font-size: 11px; }
+  .folder.active .count { color: rgba(255,255,255,.8); }
+
+  .list { background: var(--card); border-right: 1px solid var(--border); overflow:auto; }
+  .msg-row { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor:pointer; display:grid; grid-template-rows: auto auto; gap:2px; position: relative; }
+  .msg-row:hover { background: var(--row); }
+  .msg-row.active { background: var(--row); }
+  .msg-row.active::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; background: var(--accent); border-radius: 2px; }
+  .msg-row.unread::after { content: ""; position: absolute; right: 12px; top: 18px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  body[data-era="dawn"] .msg-row.unread::after { border-radius: 0; background: #000; }
+  .msg-from { font-weight: 600; font-size: 13px; display:flex; justify-content:space-between; }
+  .msg-from .when { font-weight: 400; color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .msg-subject { font-size: 13px; }
+  .msg-preview { font-size: 12px; color: var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .reader { display:grid; grid-template-rows: auto 1fr; overflow:hidden; }
+  .reader-head { padding: 20px 24px 12px; border-bottom: 1px solid var(--border); }
+  .reader-head h2 { margin: 0 0 6px; font-size: 20px; }
+  .meta { display:flex; justify-content:space-between; font-size: 12px; color: var(--dim); }
+  .meta .actions button { background: transparent; color: inherit; border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font: inherit; font-size: 11px; cursor:pointer; margin-left: 4px; }
+  body[data-era="dawn"] .meta .actions button { border-radius: 0; }
+  .meta .actions button:hover { background: var(--row); }
+  .body { padding: 20px 24px; overflow: auto; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .empty { display: grid; place-content: center; height: 100%; color: var(--dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="folders" id="folders">
+    <h3>Mailboxes</h3>
+    <div class="folder active" data-folder="inbox"><span>📥 Inbox</span><span class="count" id="c-inbox">0</span></div>
+    <div class="folder" data-folder="starred"><span>⭐ Starred</span><span class="count" id="c-starred">0</span></div>
+    <div class="folder" data-folder="archive"><span>🗄 Archive</span><span class="count" id="c-archive">0</span></div>
+    <div class="folder" data-folder="trash"><span>🗑 Trash</span><span class="count" id="c-trash">0</span></div>
+  </aside>
+  <section class="list" id="list"></section>
+  <main class="reader" id="reader">
+    <div class="empty">Select a message.</div>
+  </main>
+</div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1:mail";
+
+const USER = (() => { try { return (JSON.parse(localStorage.getItem("prismos:v1:setup:data")) || {}).name || "Friend"; } catch { return "Friend"; } })();
+
+const SEED = [
+  { from: "The Prism Team", email: "hello@prismos.example", subject: "Welcome to Prism Mail", when: "9:02 AM",
+    body: `Hi ${USER},\n\nWelcome to Prism Mail. It's a stub for now — there's no real server, just a cozy inbox full of made-up letters.\n\nTry clicking around, starring a message, or dropping something into the archive. Nothing you do here leaves your browser.\n\n— The Prism Team` },
+  { from: "A friendly stranger", email: "stranger@example.net", subject: "Good morning", when: "8:44 AM",
+    body: "Just a note to say the light looked especially nice today.\n\n(No reply needed.)" },
+  { from: "You (last night)", email: "you@prism.local", subject: "Don't forget", when: "Yesterday",
+    body: "Remember to:\n- stretch\n- eat something that isn't on a plate shaped like a palette\n- open the window for ten whole seconds\n- answer the stranger's email, maybe" },
+  { from: "Weather Service", email: "updates@weather.example", subject: "Clear skies ahead", when: "Yesterday",
+    body: "The weekend is looking bright. Enjoy it from inside Prism OS if you want." },
+  { from: "Calendar", email: "cal@prism.local", subject: "Tomorrow: a whole day", when: "2 days ago",
+    body: "You have:\n- one (1) morning\n- one (1) afternoon\n- one (1) evening\n\nNo events scheduled. This is a feature." },
+  { from: "A very old computer", email: "mainframe@retro.example", subject: "SIGNAL RECEIVED", when: "Last week",
+    body: "> HELLO, DO YOU STILL USE A TERMINAL?\n> IF YES: GLAD TO HEAR IT.\n> IF NO: I UNDERSTAND." },
+  { from: "Your past self", email: "past@you.local", subject: "Something I wanted to tell you", when: "A while ago",
+    body: "It all works out. The thing you're worrying about: it works out." },
+  { from: "The Mascot", email: "prism@prism.local", subject: "Hi!", when: "Earlier",
+    body: "Hello. I'm a triangle with eyes. Thanks for pressing my buttons." },
+];
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(NS)) || null; } catch { return null; }
+}
+function save(state) { localStorage.setItem(NS, JSON.stringify(state)); }
+
+let state = load();
+if (!state) {
+  state = {
+    msgs: SEED.map((m, i) => ({ id: "s" + i, ...m, folder: "inbox", read: false, starred: false }))
+  };
+  save(state);
+}
+let activeFolder = "inbox";
+let activeId = null;
+
+function visible() {
+  return state.msgs.filter(m => activeFolder === "starred" ? m.starred && m.folder !== "trash" : m.folder === activeFolder);
+}
+function renderCounts() {
+  const by = { inbox: 0, starred: 0, archive: 0, trash: 0 };
+  for (const m of state.msgs) {
+    if (m.folder === "inbox") by.inbox += m.read ? 0 : 1;
+    if (m.starred && m.folder !== "trash") by.starred += 1;
+    if (m.folder === "archive") by.archive += 1;
+    if (m.folder === "trash") by.trash += 1;
+  }
+  for (const k of Object.keys(by)) document.getElementById("c-" + k).textContent = by[k];
+}
+function renderList() {
+  const el = document.getElementById("list");
+  const msgs = visible();
+  el.innerHTML = "";
+  if (!msgs.length) {
+    el.innerHTML = '<div class="empty">Empty.</div>';
+    return;
+  }
+  for (const m of msgs) {
+    const r = document.createElement("div");
+    r.className = "msg-row" + (m.id === activeId ? " active" : "") + (!m.read ? " unread" : "");
+    r.innerHTML = `
+      <div class="msg-from"><span>${escapeHtml(m.from)}</span><span class="when">${escapeHtml(m.when)}</span></div>
+      <div class="msg-subject">${escapeHtml(m.subject)}</div>
+      <div class="msg-preview">${escapeHtml(m.body.replace(/\n/g, " ").slice(0, 80))}</div>
+    `;
+    r.addEventListener("click", () => openMsg(m.id));
+    el.appendChild(r);
+  }
+}
+function openMsg(id) {
+  activeId = id;
+  const m = state.msgs.find(x => x.id === id);
+  if (!m) return;
+  m.read = true;
+  save(state);
+  const el = document.getElementById("reader");
+  el.innerHTML = `
+    <div class="reader-head">
+      <h2>${escapeHtml(m.subject)}</h2>
+      <div class="meta">
+        <span><strong>${escapeHtml(m.from)}</strong> <span class="muted">&lt;${escapeHtml(m.email)}&gt;</span> · ${escapeHtml(m.when)}</span>
+        <span class="actions">
+          <button data-a="star">${m.starred ? "★ Unstar" : "☆ Star"}</button>
+          <button data-a="archive">Archive</button>
+          <button data-a="trash">Trash</button>
+        </span>
+      </div>
+    </div>
+    <div class="body">${escapeHtml(m.body)}</div>
+  `;
+  el.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => doAction(b.dataset.a, m.id)));
+  renderList(); renderCounts();
+}
+function doAction(action, id) {
+  const m = state.msgs.find(x => x.id === id);
+  if (!m) return;
+  if (action === "star") m.starred = !m.starred;
+  else if (action === "archive") m.folder = "archive";
+  else if (action === "trash") m.folder = "trash";
+  save(state);
+  if (action === "archive" || action === "trash") { activeId = null; document.getElementById("reader").innerHTML = '<div class="empty">Select a message.</div>'; }
+  renderList(); renderCounts();
+  if (action === "star" && activeId === id) openMsg(id);
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+document.querySelectorAll(".folder").forEach(f => {
+  f.addEventListener("click", () => {
+    activeFolder = f.dataset.folder;
+    document.querySelectorAll(".folder").forEach(x => x.classList.remove("active"));
+    f.classList.add("active");
+    activeId = null;
+    document.getElementById("reader").innerHTML = '<div class="empty">Select a message.</div>';
+    renderList();
+  });
+});
+
+renderList(); renderCounts();
+</script>
+</body>
+</html>

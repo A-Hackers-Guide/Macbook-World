@@ -2,6 +2,15 @@
 
 export const ERAS = [
   {
+    id: "primeval",
+    name: "Primeval",
+    year: "the phosphor age",
+    description: "A green CRT at 2 a.m. Scanlines included. BASIC optional.",
+    stylesheet: "styles/eras/primeval.css",
+    defaultWallpaper: "phosphor-grid",
+    previewBg: "radial-gradient(circle at 50% 50%, #0d1f0d, #030a03)"
+  },
+  {
     id: "dawn",
     name: "Dawn",
     year: "the early days",

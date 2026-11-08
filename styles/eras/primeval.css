@@ -1,0 +1,101 @@
+/* ---- Primeval: green phosphor CRT, scanline nostalgia ---- */
+
+body[data-era="primeval"] {
+  --surface: #061406;
+  --surface-strong: #0a1a0a;
+  --surface-ink: #78ff78;
+  --surface-ink-dim: rgba(120,255,120,.55);
+  --accent: #dfffdf;
+  --accent-ink: #061406;
+  --menubar-h: 24px;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+body[data-era="primeval"] #menubar {
+  background: #061406;
+  color: #78ff78;
+  border-bottom: 1px solid #1a3a1a;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+body[data-era="primeval"] .menubar__prism img { filter: hue-rotate(80deg) brightness(1.4) saturate(1.5); }
+
+body[data-era="primeval"] .window {
+  background: rgba(10,26,10,0.9);
+  color: #78ff78;
+  border: 2px solid #1a3a1a;
+  border-radius: 0;
+  box-shadow: 0 0 40px rgba(120,255,120,.2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+body[data-era="primeval"] .window__chrome {
+  background: #0a1a0a;
+  border-bottom: 1px solid #1a3a1a;
+  color: #78ff78;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+body[data-era="primeval"] .window__title { color: #dfffdf; }
+body[data-era="primeval"] .window__traffic .t {
+  background: transparent;
+  border: 2px solid #78ff78;
+  border-radius: 0;
+  width: 14px;
+  height: 14px;
+}
+
+body[data-era="primeval"] #dock {
+  background: #061406;
+  border: 2px solid #1a3a1a;
+  border-radius: 0;
+  box-shadow: 0 0 40px rgba(120,255,120,.15);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+body[data-era="primeval"] .dock__item img {
+  filter: grayscale(1) sepia(1) hue-rotate(60deg) saturate(2) brightness(1.2);
+}
+
+body[data-era="primeval"] .dropdown {
+  background: #0a1a0a;
+  border: 2px solid #1a3a1a;
+  color: #78ff78;
+  border-radius: 0;
+  box-shadow: 0 0 20px rgba(120,255,120,.2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+body[data-era="primeval"] .dropdown li:hover:not(.divider) {
+  background: #78ff78;
+  color: #061406;
+}
+body[data-era="primeval"] .cc__tile {
+  background: rgba(120,255,120,.05);
+  border: 1px solid rgba(120,255,120,.2);
+  border-radius: 0;
+  color: #78ff78;
+}
+body[data-era="primeval"] .cc__icon {
+  background: #78ff78;
+  color: #061406;
+  border-radius: 0;
+}
+body[data-era="primeval"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50000;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
