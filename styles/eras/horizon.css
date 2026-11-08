@@ -1,0 +1,64 @@
+/* ---- Horizon: warm cream + terracotta, minimal and airy ---- */
+
+body[data-era="horizon"] {
+  --surface: rgba(255, 246, 234, 0.82);
+  --surface-strong: rgba(255, 246, 234, 0.95);
+  --surface-ink: #2a1a0a;
+  --surface-ink-dim: rgba(42, 26, 10, 0.55);
+  --accent: #d96a2a;
+  --accent-ink: #fff;
+  color-scheme: light;
+}
+
+body[data-era="horizon"] #menubar {
+  background: var(--surface);
+  color: var(--surface-ink);
+  border-bottom: 1px solid rgba(217, 106, 42, 0.18);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow: none;
+}
+body[data-era="horizon"] .menubar__item:hover,
+body[data-era="horizon"] .menubar__icon:hover { background: rgba(217, 106, 42, 0.12); }
+
+body[data-era="horizon"] .window {
+  background: var(--surface);
+  color: var(--surface-ink);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(170, 60, 20, 0.25), 0 0 0 1px rgba(217, 106, 42, 0.15);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+body[data-era="horizon"] .window__chrome {
+  background: linear-gradient(180deg, rgba(255, 220, 180, 0.7), rgba(255, 220, 180, 0));
+  border-bottom: 1px solid rgba(217, 106, 42, 0.15);
+}
+body[data-era="horizon"] .window__title { color: var(--surface-ink); }
+
+body[data-era="horizon"] #dock {
+  background: rgba(255, 246, 234, 0.85);
+  border: 1px solid rgba(217, 106, 42, 0.2);
+  border-radius: 22px;
+  box-shadow: 0 16px 36px rgba(170, 60, 20, 0.2);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+}
+
+body[data-era="horizon"] .dropdown {
+  background: var(--surface-strong);
+  color: var(--surface-ink);
+  border: 1px solid rgba(217, 106, 42, 0.2);
+  box-shadow: 0 16px 36px rgba(170, 60, 20, 0.25);
+}
+body[data-era="horizon"] .dropdown li:hover:not(.divider) {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+body[data-era="horizon"] .cc__tile {
+  background: rgba(255, 220, 180, 0.4);
+  color: var(--surface-ink);
+}
+body[data-era="horizon"] .cc__icon {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

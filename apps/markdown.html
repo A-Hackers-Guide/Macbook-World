@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Markdown</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#5faaff; --dim: rgba(255,255,255,.55); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --card:#fff; --border:#000; --accent:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --card:#f5f6f8; --border:#70737e; --accent:#3c66ff; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --accent:#1a66d9; --dim:#334a7a; }
+  body[data-era="primeval"] { --bg:#0a1a0a; --fg:#78ff78; --card: rgba(120,255,120,.05); --border: rgba(120,255,120,.2); --accent:#dfffdf; --dim: rgba(120,255,120,.55); font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="horizon"] { --bg:#fff6ea; --fg:#2a1a0a; --card: rgba(255,228,180,.4); --border: rgba(255,170,100,.4); --accent:#d96a2a; --dim:#8a5a2a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-rows: auto 1fr auto; height:100%; }
+  .toolbar { display: flex; gap: 4px; padding: 6px 10px; background: var(--card); border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .toolbar button, .toolbar select { font: inherit; font-size: 12px; padding: 4px 10px; background: transparent; color: inherit; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+  .toolbar button:hover, .toolbar button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  body[data-era="dawn"] .toolbar button, body[data-era="dawn"] .toolbar select { border-radius: 0; }
+  .toolbar .spacer { flex: 1; }
+  .panes { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+  .panes.one { grid-template-columns: 1fr; }
+  textarea {
+    width: 100%; height: 100%; border: 0; padding: 18px 22px;
+    background: var(--bg); color: var(--fg);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14px; line-height: 1.6; resize: none; outline: none;
+    border-right: 1px solid var(--border);
+  }
+  .preview {
+    padding: 18px 26px;
+    overflow: auto;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+  }
+  .preview h1 { font-size: 28px; margin: 0 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .preview h2 { font-size: 22px; margin: 18px 0 8px; }
+  .preview h3 { font-size: 18px; margin: 16px 0 6px; }
+  .preview p { margin: 0 0 12px; }
+  .preview code { background: var(--card); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, Menlo, monospace; font-size: .92em; }
+  .preview pre { background: var(--card); padding: 12px 14px; border-radius: 8px; overflow: auto; }
+  body[data-era="dawn"] .preview pre, body[data-era="dawn"] .preview code { border-radius: 0; border: 1px solid #000; }
+  .preview pre code { background: transparent; padding: 0; }
+  .preview blockquote { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; margin: 0 0 12px 0; color: var(--dim); }
+  .preview ul, .preview ol { padding-left: 24px; margin: 0 0 12px; }
+  .preview a { color: var(--accent); }
+  .preview hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+  .statusbar { padding: 6px 12px; background: var(--card); border-top: 1px solid var(--border); font-size: 11px; color: var(--dim); display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <select id="doc-select"></select>
+    <button id="new-doc" title="New document">+ New</button>
+    <button id="rename-doc" title="Rename">✎ Rename</button>
+    <button id="del-doc" title="Delete">🗑</button>
+    <span class="spacer"></span>
+    <button data-md="**" data-c="b" title="Bold (**)"><b>B</b></button>
+    <button data-md="*" data-c="i" title="Italic (*)"><i>I</i></button>
+    <button data-md="`" data-c="k" title="Inline code (`)"><code>&lt;/&gt;</code></button>
+    <button data-md-prefix="# " title="Heading">H1</button>
+    <button data-md-prefix="## " title="Heading 2">H2</button>
+    <button data-md-prefix="- " title="List">• List</button>
+    <button data-md-prefix="> " title="Quote">❝ Quote</button>
+    <button id="toggle-preview" title="Toggle preview">◨</button>
+    <button id="download" title="Download .md">⬇</button>
+  </div>
+  <div class="panes" id="panes">
+    <textarea id="editor" placeholder="Start typing. Supports **bold**, *italic*, `code`, # headings, - lists, > quotes, [links](url), ---."></textarea>
+    <div class="preview" id="preview"></div>
+  </div>
+  <div class="statusbar">
+    <span id="status">0 words · 0 chars</span>
+    <span>Auto-saved to this browser</span>
+  </div>
+</div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1:md";
+
+const editor = document.getElementById("editor");
+const preview = document.getElementById("preview");
+const panes = document.getElementById("panes");
+const select = document.getElementById("doc-select");
+const statusEl = document.getElementById("status");
+
+let docs = {};
+try { docs = JSON.parse(localStorage.getItem(NS + ":docs")) || {}; } catch {}
+let currentId = localStorage.getItem(NS + ":current");
+if (!currentId || !docs[currentId]) {
+  currentId = "d" + Date.now().toString(36);
+  docs[currentId] = { name: "Untitled", body: "# Welcome to Markdown\n\nType on the left, see it rendered on the right.\n\n- A list\n- With **bold**, *italic*, `code`\n- And a [link](https://example.com)\n\n> This is a block quote.\n\n```\ncode block\n```\n" };
+  save();
+}
+
+function save() {
+  localStorage.setItem(NS + ":docs", JSON.stringify(docs));
+  localStorage.setItem(NS + ":current", currentId);
+}
+
+function renderSelect() {
+  select.innerHTML = "";
+  for (const id of Object.keys(docs)) {
+    const o = document.createElement("option");
+    o.value = id; o.textContent = docs[id].name;
+    if (id === currentId) o.selected = true;
+    select.appendChild(o);
+  }
+}
+
+function load() {
+  editor.value = docs[currentId].body || "";
+  updatePreview();
+  updateStatus();
+}
+
+function updateStatus() {
+  const txt = editor.value;
+  const words = (txt.match(/\S+/g) || []).length;
+  statusEl.textContent = `${words} word${words === 1 ? "" : "s"} · ${txt.length} char${txt.length === 1 ? "" : "s"}`;
+}
+
+// Tiny Markdown renderer
+function md(src) {
+  const esc = (s) => s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+  const lines = src.split(/\r?\n/);
+  let out = []; let inCode = false; let codeBuf = [];
+  for (let line of lines) {
+    if (/^```/.test(line)) {
+      if (inCode) { out.push("<pre><code>" + esc(codeBuf.join("\n")) + "</code></pre>"); codeBuf = []; inCode = false; }
+      else inCode = true;
+      continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+    if (/^---+$/.test(line)) { out.push("<hr/>"); continue; }
+    let m = line.match(/^(#{1,6})\s+(.*)$/);
+    if (m) { const level = m[1].length; out.push(`<h${level}>${inline(esc(m[2]))}</h${level}>`); continue; }
+    m = line.match(/^>\s?(.*)$/);
+    if (m) { out.push(`<blockquote>${inline(esc(m[1]))}</blockquote>`); continue; }
+    m = line.match(/^\s*[-*]\s+(.*)$/);
+    if (m) { out.push(`<ul><li>${inline(esc(m[1]))}</li></ul>`); continue; }
+    m = line.match(/^\s*\d+\.\s+(.*)$/);
+    if (m) { out.push(`<ol><li>${inline(esc(m[1]))}</li></ol>`); continue; }
+    if (line.trim() === "") { out.push(""); continue; }
+    out.push(`<p>${inline(esc(line))}</p>`);
+  }
+  if (inCode) { out.push("<pre><code>" + esc(codeBuf.join("\n")) + "</code></pre>"); }
+  // merge consecutive ul/ol blocks
+  let html = out.join("\n");
+  html = html.replace(/<\/ul>\n<ul>/g, "").replace(/<\/ol>\n<ol>/g, "");
+  return html;
+}
+function inline(s) {
+  return s
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+
+function updatePreview() {
+  preview.innerHTML = md(editor.value);
+}
+editor.addEventListener("input", () => {
+  docs[currentId].body = editor.value;
+  save();
+  updatePreview();
+  updateStatus();
+});
+
+select.addEventListener("change", () => { currentId = select.value; save(); load(); });
+document.getElementById("new-doc").addEventListener("click", () => {
+  const id = "d" + Date.now().toString(36);
+  docs[id] = { name: "Untitled " + (Object.keys(docs).length + 1), body: "" };
+  currentId = id; save(); renderSelect(); load();
+});
+document.getElementById("rename-doc").addEventListener("click", () => {
+  const name = prompt("New name", docs[currentId].name);
+  if (name) { docs[currentId].name = name; save(); renderSelect(); }
+});
+document.getElementById("del-doc").addEventListener("click", () => {
+  if (Object.keys(docs).length < 2) return alert("Can't delete the last document.");
+  if (!confirm("Delete this document?")) return;
+  delete docs[currentId];
+  currentId = Object.keys(docs)[0];
+  save(); renderSelect(); load();
+});
+
+document.querySelectorAll("[data-md]").forEach(b => b.addEventListener("click", () => wrap(b.dataset.md)));
+document.querySelectorAll("[data-md-prefix]").forEach(b => b.addEventListener("click", () => prefix(b.dataset.mdPrefix)));
+function wrap(ch) {
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  const before = editor.value.slice(0, s), sel = editor.value.slice(s, e), after = editor.value.slice(e);
+  editor.value = before + ch + sel + ch + after;
+  editor.focus();
+  editor.selectionStart = s + ch.length; editor.selectionEnd = e + ch.length;
+  editor.dispatchEvent(new Event("input"));
+}
+function prefix(p) {
+  const s = editor.selectionStart;
+  const before = editor.value.slice(0, s);
+  const lineStart = before.lastIndexOf("\n") + 1;
+  editor.value = editor.value.slice(0, lineStart) + p + editor.value.slice(lineStart);
+  editor.focus();
+  editor.selectionStart = editor.selectionEnd = s + p.length;
+  editor.dispatchEvent(new Event("input"));
+}
+
+document.getElementById("toggle-preview").addEventListener("click", () => {
+  panes.classList.toggle("one");
+  preview.hidden = panes.classList.contains("one");
+  editor.style.borderRight = preview.hidden ? "0" : "1px solid var(--border)";
+});
+
+document.getElementById("download").addEventListener("click", () => {
+  const blob = new Blob([editor.value], { type: "text/markdown" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (docs[currentId].name || "document") + ".md";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+});
+
+editor.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") { wrap("**"); e.preventDefault(); }
+  else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i") { wrap("*"); e.preventDefault(); }
+});
+
+renderSelect(); load();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg-sw" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff2d6"/>
+      <stop offset="0.3" stop-color="#ffd48a"/>
+      <stop offset="0.6" stop-color="#ffa070"/>
+      <stop offset="1" stop-color="#d9634a"/>
+    </linearGradient>
+    <radialGradient id="sun-sw" cx="0.5" cy="0.6" r="0.3">
+      <stop offset="0" stop-color="#fff8dc"/>
+      <stop offset="1" stop-color="#ffb870" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg-sw)"/>
+  <rect width="1920" height="1080" fill="url(#sun-sw)"/>
+  <circle cx="960" cy="650" r="110" fill="#fff8e4" opacity="0.98"/>
+  <g stroke="#fff6ea" stroke-width="2" opacity="0.5">
+    <line x1="0" y1="760" x2="1920" y2="760"/>
+    <line x1="0" y1="790" x2="1920" y2="790"/>
+    <line x1="0" y1="820" x2="1920" y2="820"/>
+    <line x1="0" y1="860" x2="1920" y2="860"/>
+    <line x1="0" y1="920" x2="1920" y2="920"/>
+    <line x1="0" y1="1000" x2="1920" y2="1000"/>
+  </g>
+</svg>

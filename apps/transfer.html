@@ -49,8 +49,8 @@
     <div class="info">
       <dl>
         <dt>Current era</dt><dd id="era-name">—</dd>
-        <dt>Apps included</dt><dd>Settings, Notes, Calculator, Files, Browser, Terminal, Music, Paint, Photos, Clock, Weather, Calendar, Mail, Snake, About</dd>
-        <dt>Wallpapers</dt><dd>16 originals</dd>
+        <dt>Apps included</dt><dd>19 apps (every one except Browser and Transfer)</dd>
+        <dt>Wallpapers</dt><dd>17 originals</dd>
         <dt>Transfer app</dt><dd>Omitted from bundle (not useful inside itself)</dd>
       </dl>
     </div>
@@ -73,14 +73,14 @@
 const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
 document.body.dataset.era = era;
 
-const ERA_NAMES = { primeval:"Primeval", dawn:"Dawn", noon:"Noon", dusk:"Dusk", twilight:"Twilight", nightfall:"Nightfall" };
-const DEFAULT_WP = { primeval:"phosphor-grid", dawn:"dither-pond", noon:"ridge-midday", dusk:"ocean-sunset", twilight:"ribbons", nightfall:"aurora-glass" };
+const ERA_NAMES = { primeval:"Primeval", dawn:"Dawn", noon:"Noon", dusk:"Dusk", horizon:"Horizon", twilight:"Twilight", nightfall:"Nightfall" };
+const DEFAULT_WP = { primeval:"phosphor-grid", dawn:"dither-pond", noon:"ridge-midday", dusk:"ocean-sunset", horizon:"sunrise-wash", twilight:"ribbons", nightfall:"aurora-glass" };
 
-const APP_IDS   = ["settings","notes","calculator","files","browser","terminal","music","paint","photos","clock","weather","calendar","mail","snake","minesweeper","dictionary","about"];
-const APP_NAMES = { settings:"Settings", notes:"Notes", calculator:"Calculator", files:"Files", browser:"Browser", terminal:"Terminal", music:"Music", paint:"Paint", photos:"Photos", clock:"Clock", weather:"Weather", calendar:"Calendar", mail:"Mail", snake:"Snake", minesweeper:"Minesweeper", dictionary:"Dictionary", about:"About This Prism" };
-const APP_SIZES = { settings:{w:820,h:560}, notes:{w:760,h:520}, calculator:{w:280,h:420}, files:{w:820,h:540}, browser:{w:980,h:620}, terminal:{w:720,h:460}, music:{w:540,h:580}, paint:{w:940,h:620}, photos:{w:820,h:560}, clock:{w:620,h:500}, weather:{w:540,h:620}, calendar:{w:820,h:540}, mail:{w:900,h:560}, snake:{w:540,h:620}, minesweeper:{w:540,h:580}, dictionary:{w:720,h:540}, about:{w:460,h:540} };
-const WP_IDS    = ["aurora-glass","ocean-sunset","mountain-dawn","ridge-midday","desert-dune","forest-mist","space-nebula","wave-form","crystal-glyph","dither-pond","minimal-grid","ribbons","isobars","prism-field","moon-garden","phosphor-grid"];
-const ICON_IDS  = ["mascot","settings","notes","calculator","files","browser","transfer","about","terminal","music","paint","photos","clock","weather","calendar","mail","snake","minesweeper","dictionary"];
+const APP_IDS   = ["settings","notes","calculator","files","browser","terminal","music","paint","photos","clock","weather","calendar","mail","snake","minesweeper","dictionary","markdown","2048","pomodoro","passgen","about"];
+const APP_NAMES = { settings:"Settings", notes:"Notes", calculator:"Calculator", files:"Files", browser:"Browser", terminal:"Terminal", music:"Music", paint:"Paint", photos:"Photos", clock:"Clock", weather:"Weather", calendar:"Calendar", mail:"Mail", snake:"Snake", minesweeper:"Minesweeper", dictionary:"Dictionary", markdown:"Markdown", "2048":"2048", pomodoro:"Pomodoro", passgen:"Password Generator", about:"About This Prism" };
+const APP_SIZES = { settings:{w:820,h:560}, notes:{w:760,h:520}, calculator:{w:280,h:420}, files:{w:820,h:540}, browser:{w:980,h:620}, terminal:{w:720,h:460}, music:{w:540,h:580}, paint:{w:940,h:620}, photos:{w:820,h:560}, clock:{w:620,h:500}, weather:{w:540,h:620}, calendar:{w:820,h:540}, mail:{w:900,h:560}, snake:{w:540,h:620}, minesweeper:{w:540,h:580}, dictionary:{w:720,h:540}, markdown:{w:940,h:620}, "2048":{w:440,h:600}, pomodoro:{w:420,h:620}, passgen:{w:520,h:640}, about:{w:460,h:540} };
+const WP_IDS    = ["aurora-glass","ocean-sunset","mountain-dawn","ridge-midday","desert-dune","forest-mist","space-nebula","wave-form","crystal-glyph","dither-pond","minimal-grid","ribbons","isobars","prism-field","moon-garden","phosphor-grid","sunrise-wash"];
+const ICON_IDS  = ["mascot","settings","notes","calculator","files","browser","transfer","about","terminal","music","paint","photos","clock","weather","calendar","mail","snake","minesweeper","dictionary","markdown","2048","pomodoro","passgen"];
 
 document.getElementById("era-name").textContent = ERA_NAMES[era] || era;
 const exportBtn = document.getElementById("export-btn");

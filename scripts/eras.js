@@ -38,6 +38,15 @@ export const ERAS = [
     previewBg: "linear-gradient(180deg, #8ba8ff 0%, #4972d9 60%, #2a4aa8 100%)"
   },
   {
+    id: "horizon",
+    name: "Horizon",
+    year: "warm minimal",
+    description: "Cream and terracotta. An airy, sunlit desktop with nothing in the way.",
+    stylesheet: "styles/eras/horizon.css",
+    defaultWallpaper: "sunrise-wash",
+    previewBg: "linear-gradient(180deg, #fff2d6 0%, #ffd48a 40%, #d9634a 100%)"
+  },
+  {
     id: "twilight",
     name: "Twilight",
     year: "pink-hour glass",
