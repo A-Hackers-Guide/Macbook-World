@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1a4a"/>
+      <stop offset="0.4" stop-color="#8a3a7a"/>
+      <stop offset="0.75" stop-color="#ffb470"/>
+      <stop offset="1" stop-color="#ffd890"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2a7a"/>
+      <stop offset="1" stop-color="#1a0a2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <circle cx="960" cy="680" r="90" fill="#ffd3a0" opacity="0.95"/>
+  <rect y="720" width="1920" height="360" fill="url(#sea)"/>
+  <rect x="930" y="720" width="60" height="360" fill="#ffd3a0" opacity="0.35"/>
+  <g stroke="#ffd3a0" stroke-width="1.5" opacity="0.4">
+    <line x1="700" y1="820" x2="1220" y2="820"/>
+    <line x1="600" y1="880" x2="1320" y2="880"/>
+    <line x1="500" y1="940" x2="1420" y2="940"/>
+    <line x1="400" y1="1000" x2="1520" y2="1000"/>
+  </g>
+</svg>

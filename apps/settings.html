@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Settings</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#a68cff; --dim: rgba(255,255,255,.55); --row-hover: rgba(255,255,255,.04); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; --row-hover:#eee; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; --row-hover:#dde1e8; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.3); --dim:#334a7a; --row-hover: rgba(255,255,255,.4); }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-columns: 220px 1fr; height:100%; }
+  .side { background: var(--card); border-right: 1px solid var(--border); padding: 12px 8px; }
+  .side h3 { margin: 10px 8px 4px; font-size: 11px; letter-spacing:.06em; text-transform:uppercase; color: var(--dim); font-weight: 600; }
+  .nav { list-style:none; margin:0; padding:0; }
+  .nav li { padding: 7px 10px; border-radius:6px; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:8px; }
+  .nav li:hover { background: var(--row-hover); }
+  .nav li.active { background: var(--accent); color: #fff; }
+  body[data-era="dawn"] .nav li { border-radius:0; border:1px solid transparent; }
+  body[data-era="dawn"] .nav li.active { background:#000; color:#fff; }
+  main { overflow:auto; padding: 24px 28px; }
+  section { margin-bottom: 28px; }
+  section h2 { margin: 0 0 14px; font-size: 20px; letter-spacing:-0.01em; }
+  .row { display: grid; grid-template-columns: 180px 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: center; }
+  .row:last-child { border-bottom: 0; }
+  .row .label { color: var(--dim); font-size: 13px; }
+  input[type=text] { font: inherit; padding: 7px 10px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; width: 260px; }
+  select { font: inherit; padding: 7px 10px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; }
+  button.action { padding: 7px 14px; font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  body[data-era="dawn"] button.action { background:#000; color:#fff; border-radius:0; border:2px solid #000; }
+  .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .wall { position:relative; border-radius: 10px; overflow: hidden; cursor:pointer; aspect-ratio: 16 / 10; border: 2px solid transparent; transition: transform .15s; }
+  .wall:hover { transform: scale(1.02); }
+  .wall.selected { border-color: var(--accent); }
+  .wall img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .wall .wall-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 8px; font-size: 11px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); background: linear-gradient(to top, rgba(0,0,0,.5), transparent); }
+  body[data-era="dawn"] .wall { border-radius:0; border:2px solid #000; }
+  body[data-era="dawn"] .wall.selected { outline: 3px solid #000; outline-offset: 3px; }
+  .theme-row { display: flex; gap: 10px; }
+  .theme-opt { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: var(--card); font-size: 13px; }
+  .theme-opt.active { border-color: var(--accent); color: var(--accent); }
+  body[data-era="dawn"] .theme-opt { border-radius:0; }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 8px; }
+  .danger { background: transparent; color: #ff6060; border: 1px solid #ff6060; border-radius: 6px; padding: 6px 12px; cursor:pointer; font: inherit; }
+  .danger:hover { background: rgba(255,96,96,.1); }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <h3>General</h3>
+      <ul class="nav">
+        <li data-pane="appearance" class="active">🎨 Appearance</li>
+        <li data-pane="wallpaper">🖼 Wallpaper</li>
+        <li data-pane="user">👤 User</li>
+        <li data-pane="transfer">📦 Transfer</li>
+        <li data-pane="era">🎭 Era</li>
+        <li data-pane="reset">⟲ Reset</li>
+      </ul>
+    </aside>
+    <main>
+
+      <section data-pane="appearance">
+        <h2>Appearance</h2>
+        <div class="row">
+          <span class="label">Theme</span>
+          <div class="theme-row" id="theme-row">
+            <button class="theme-opt" data-theme="auto">Auto</button>
+            <button class="theme-opt" data-theme="light">Light</button>
+            <button class="theme-opt" data-theme="dark">Dark</button>
+          </div>
+        </div>
+        <div class="row">
+          <span class="label">Accent color</span>
+          <input type="color" id="accent-color" value="#a68cff" />
+        </div>
+        <p class="hint">Theme affects individual app windows. The desktop chrome itself is defined by the chosen era.</p>
+      </section>
+
+      <section data-pane="wallpaper" hidden>
+        <h2>Wallpaper</h2>
+        <div class="wall-grid" id="wall-grid"></div>
+        <p class="hint">Click a wallpaper to apply it to the desktop. Choice is saved per era.</p>
+      </section>
+
+      <section data-pane="user" hidden>
+        <h2>User</h2>
+        <div class="row">
+          <span class="label">Display name</span>
+          <input type="text" id="user-name" placeholder="Your name" />
+        </div>
+        <p class="hint">This name is stored only in your browser.</p>
+      </section>
+
+      <section data-pane="transfer" hidden>
+        <h2>Transfer</h2>
+        <p>Export this era (<strong id="t-era">Nightfall</strong>) as a single standalone HTML file you can open anywhere, even offline.</p>
+        <div class="row">
+          <span class="label">Export era</span>
+          <button class="action" id="open-transfer">Open Transfer app</button>
+        </div>
+        <p class="hint">The exported file bundles shell, apps (except Browser, which needs the internet), icons, wallpapers, and your current era theme.</p>
+      </section>
+
+      <section data-pane="era" hidden>
+        <h2>Era</h2>
+        <p>The whole visual language of your desktop can change.</p>
+        <div class="row">
+          <span class="label">Current era</span>
+          <strong id="era-current">Nightfall</strong>
+        </div>
+        <div class="row">
+          <span class="label">Change era</span>
+          <button class="action" id="choose-era">Pick another era…</button>
+        </div>
+      </section>
+
+      <section data-pane="reset" hidden>
+        <h2>Reset</h2>
+        <p>Start over. Everything local to your browser gets cleared.</p>
+        <div class="row">
+          <span class="label">Reset setup</span>
+          <button class="danger" id="reset-setup">Run Setup Assistant again</button>
+        </div>
+        <div class="row">
+          <span class="label">Clear everything</span>
+          <button class="danger" id="reset-all">Clear all Prism OS data</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const NS = "prismos:v1";
+const ERA_NAMES = { dawn:"Dawn", noon:"Noon", dusk:"Dusk", nightfall:"Nightfall" };
+const WALLPAPERS = [
+  { id:"aurora-glass", name:"Aurora" },
+  { id:"ocean-sunset", name:"Ocean Sunset" },
+  { id:"mountain-dawn", name:"Mountain Dawn" },
+  { id:"ridge-midday", name:"Ridge Midday" },
+  { id:"desert-dune", name:"Desert Dune" },
+  { id:"forest-mist", name:"Forest Mist" },
+  { id:"space-nebula", name:"Nebula" },
+  { id:"wave-form", name:"Waveform" },
+  { id:"crystal-glyph", name:"Crystal" },
+  { id:"dither-pond", name:"Dither Pond" },
+];
+
+// Pane switching
+document.querySelectorAll(".nav li").forEach(li => {
+  li.addEventListener("click", () => {
+    document.querySelectorAll(".nav li").forEach(n => n.classList.remove("active"));
+    li.classList.add("active");
+    const pane = li.dataset.pane;
+    document.querySelectorAll("main > section").forEach(s => s.hidden = (s.dataset.pane !== pane));
+  });
+});
+
+// Theme
+let currentTheme = localStorage.getItem(NS + ":theme") || "auto";
+function applyThemeButtons() {
+  document.querySelectorAll(".theme-opt").forEach(b => b.classList.toggle("active", b.dataset.theme === currentTheme));
+}
+document.querySelectorAll(".theme-opt").forEach(b => b.addEventListener("click", () => {
+  currentTheme = b.dataset.theme;
+  localStorage.setItem(NS + ":theme", currentTheme);
+  applyThemeButtons();
+  parent.postMessage({ type:"prism:theme", theme: currentTheme }, "*");
+}));
+applyThemeButtons();
+
+// Accent color
+const accentInput = document.getElementById("accent-color");
+const savedAccent = localStorage.getItem(NS + ":accent");
+if (savedAccent) accentInput.value = savedAccent;
+accentInput.addEventListener("input", () => {
+  localStorage.setItem(NS + ":accent", accentInput.value);
+  parent.postMessage({ type:"prism:accent", color: accentInput.value }, "*");
+});
+
+// Wallpaper grid
+const wallGrid = document.getElementById("wall-grid");
+const savedWallpaper = localStorage.getItem(NS + `:era:${era}:wallpaper`);
+for (const w of WALLPAPERS) {
+  const d = document.createElement("div");
+  d.className = "wall" + (w.id === savedWallpaper ? " selected" : "");
+  d.dataset.id = w.id;
+  d.innerHTML = `<img src="../assets/wallpapers/${w.id}.svg" alt="${w.name}" /><span class="wall-name">${w.name}</span>`;
+  d.addEventListener("click", () => {
+    document.querySelectorAll(".wall").forEach(n => n.classList.remove("selected"));
+    d.classList.add("selected");
+    parent.postMessage({ type:"prism:wallpaper", wallpaperId: w.id }, "*");
+  });
+  wallGrid.appendChild(d);
+}
+
+// User
+const userInput = document.getElementById("user-name");
+try {
+  const u = JSON.parse(localStorage.getItem(NS + ":setup:data")) || {};
+  userInput.value = u.name || "";
+} catch {}
+userInput.addEventListener("input", () => {
+  let u = {};
+  try { u = JSON.parse(localStorage.getItem(NS + ":setup:data")) || {}; } catch {}
+  u.name = userInput.value;
+  localStorage.setItem(NS + ":setup:data", JSON.stringify(u));
+});
+
+// Transfer launch
+document.getElementById("t-era").textContent = ERA_NAMES[era] || era;
+document.getElementById("era-current").textContent = ERA_NAMES[era] || era;
+document.getElementById("open-transfer").addEventListener("click", () => {
+  parent.postMessage({ type:"prism:open-app", appId:"transfer" }, "*");
+});
+document.getElementById("choose-era").addEventListener("click", () => {
+  parent.postMessage({ type:"prism:choose-era" }, "*");
+});
+
+// Reset
+document.getElementById("reset-setup").addEventListener("click", () => {
+  if (!confirm("Run Setup Assistant again?")) return;
+  localStorage.removeItem(NS + ":setup:complete");
+  parent.postMessage({ type:"prism:reload-shell" }, "*");
+});
+document.getElementById("reset-all").addEventListener("click", () => {
+  if (!confirm("This clears every Prism OS setting, note, and preference in this browser. Continue?")) return;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith(NS)) localStorage.removeItem(k);
+  }
+  parent.postMessage({ type:"prism:reload-shell" }, "*");
+});
+</script>
+</body>
+</html>

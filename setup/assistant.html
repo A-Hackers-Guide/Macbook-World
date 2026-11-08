@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Welcome to Prism OS</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/icons/mascot.svg" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: radial-gradient(1400px 900px at 30% 10%, #2a1d5a 0%, #0c0a1e 60%, #040207 100%);
+      --surface: rgba(28,28,40,.6);
+      --ink: #f4f4f6;
+      --ink-dim: rgba(244,244,246,.62);
+      --accent: #a68cff;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+    .card {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-content: center;
+      padding: 32px;
+    }
+    .panel {
+      width: min(560px, 92vw);
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      backdrop-filter: blur(32px) saturate(1.6);
+      padding: 36px 32px;
+      box-shadow: 0 40px 80px rgba(0,0,0,.55);
+      animation: in .4s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .mascot-row {
+      display: grid; place-content: center; margin-bottom: 18px;
+    }
+    .mascot-row img { width: 72px; height: 72px; filter: drop-shadow(0 8px 24px rgba(170,180,255,.4)); }
+    h1 {
+      font-size: 28px; margin: 0 0 8px; text-align: center;
+      background: linear-gradient(135deg, #fff, #c7b4ff 60%, #ff9ec7);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    h2 { font-size: 22px; margin: 0 0 8px; text-align: center; }
+    p.lead { text-align: center; color: var(--ink-dim); margin: 0 0 24px; line-height: 1.5; }
+
+    .license {
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 10px;
+      max-height: 220px;
+      overflow: auto;
+      padding: 14px 16px;
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: var(--ink-dim);
+      margin-bottom: 20px;
+    }
+    .license h3 { color: var(--ink); margin: 0 0 8px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+
+    input[type=text] {
+      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      color: var(--ink);
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    input[type=text]:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(255,255,255,.08);
+    }
+    select {
+      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      color: var(--ink);
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .buttons { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
+    button.primary, button.ghost {
+      padding: 10px 20px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font: inherit; font-weight: 600;
+      cursor: pointer;
+    }
+    button.primary { background: var(--accent); color: #11081e; }
+    button.primary:hover { filter: brightness(1.08); }
+    button.ghost   { background: rgba(255,255,255,.05); color: var(--ink); border-color: rgba(255,255,255,.12); }
+    button.ghost:hover { background: rgba(255,255,255,.09); }
+    .progress {
+      display: flex; gap: 6px; justify-content: center; margin-bottom: 24px;
+    }
+    .progress span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,.15);
+    }
+    .progress span.on { background: var(--accent); }
+    .checklist { list-style: none; padding: 0; margin: 0 0 20px; }
+    .checklist li { padding: 8px 0; color: var(--ink-dim); display: flex; gap: 10px; align-items: center; }
+    .checklist li::before { content: "✓"; color: var(--accent); font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <section class="panel" data-step="welcome">
+      <div class="mascot-row"><img src="../assets/icons/mascot.svg" alt="" /></div>
+      <h1>Welcome to Prism OS</h1>
+      <p class="lead">
+        A little desktop you can carry around in a browser tab.<br/>
+        Let's get you set up.
+      </p>
+      <div class="progress"><span class="on"></span><span></span><span></span><span></span></div>
+      <label for="lang" class="sr">Language</label>
+      <select id="lang">
+        <option>English — the only language I can think in right now</option>
+        <option disabled>Más idiomas (coming soon™)</option>
+      </select>
+      <div class="buttons">
+        <span></span>
+        <button class="primary" data-next="license">Continue</button>
+      </div>
+    </section>
+
+    <section class="panel" data-step="license" hidden>
+      <h2>Software License Agreement</h2>
+      <p class="lead">Before we continue, a word from legal (me).</p>
+      <div class="progress"><span></span><span class="on"></span><span></span><span></span></div>
+      <div class="license">
+        <h3>Prism OS Parody License</h3>
+        <p><strong>Prism OS is a work of parody fiction.</strong> It is not an operating system, it is a web page.
+        Nothing in it is produced by, affiliated with, endorsed by, or representing any real computer company.</p>
+        <p>Every image, icon, wallpaper, sound, and line of text in Prism OS is original to this project, or drawn from
+        your device's own installed system fonts. If anything in here looks familiar, that's because operating systems
+        all converge on the same obvious ideas after 40 years: there is a bar at the top, a shelf at the bottom,
+        and rectangles in the middle.</p>
+        <p>By clicking "Agree" you confirm that you're here for the vibes, you won't sue anybody, and you understand
+        that if you close the tab, your files inside Prism OS vanish (they live in your browser's own storage,
+        not in a cloud).</p>
+        <p>This agreement is governed by the universal laws of jokes and the specific laws of wherever you are.
+        If you don't like it, don't click Agree — nothing will happen, which is also a valid choice.</p>
+      </div>
+      <div class="buttons">
+        <button class="ghost" data-back="welcome">Back</button>
+        <button class="primary" data-next="name">Agree</button>
+      </div>
+    </section>
+
+    <section class="panel" data-step="name" hidden>
+      <h2>What should we call you?</h2>
+      <p class="lead">This is just for your Prism OS desktop. It never leaves your browser.</p>
+      <div class="progress"><span></span><span></span><span class="on"></span><span></span></div>
+      <input type="text" id="name-input" placeholder="Your name" autocomplete="off" />
+      <div class="buttons">
+        <button class="ghost" data-back="license">Back</button>
+        <button class="primary" data-next="done" id="name-continue">Continue</button>
+      </div>
+    </section>
+
+    <section class="panel" data-step="done" hidden>
+      <div class="mascot-row"><img src="../assets/icons/mascot.svg" alt="" /></div>
+      <h2>You're all set, <span id="done-name">friend</span></h2>
+      <p class="lead">Prism OS is ready. Here's what you've got:</p>
+      <div class="progress"><span></span><span></span><span></span><span class="on"></span></div>
+      <ul class="checklist">
+        <li>A boot chime that nobody else has</li>
+        <li>Four decades of aesthetic to choose from</li>
+        <li>A set of apps that mostly work</li>
+        <li>A Transfer app that saves this era as a single file</li>
+      </ul>
+      <div class="buttons">
+        <span></span>
+        <button class="primary" id="finish">Start Using Prism OS</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const params = new URLSearchParams(location.search);
+    const era = params.get("era") || "nightfall";
+    const NS = "prismos:v1";
+
+    const panels = document.querySelectorAll(".panel");
+    function go(step) {
+      panels.forEach((p) => (p.hidden = p.dataset.step !== step));
+      const t = document.querySelector(`.panel[data-step="${step}"]`);
+      t?.querySelector("input, button.primary")?.focus();
+    }
+
+    document.querySelectorAll("[data-next]").forEach((b) => {
+      b.addEventListener("click", () => {
+        if (b.dataset.next === "done") {
+          const name = document.getElementById("name-input").value.trim() || "Friend";
+          localStorage.setItem(`${NS}:setup:data`, JSON.stringify({ name }));
+          document.getElementById("done-name").textContent = name;
+        }
+        go(b.dataset.next);
+      });
+    });
+    document.querySelectorAll("[data-back]").forEach((b) => {
+      b.addEventListener("click", () => go(b.dataset.back));
+    });
+
+    document.getElementById("name-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("name-continue").click();
+    });
+
+    document.getElementById("finish").addEventListener("click", () => {
+      localStorage.setItem(`${NS}:setup:complete`, "true");
+      location.href = `../desktop.html?era=${encodeURIComponent(era)}`;
+    });
+  </script>
+</body>
+</html>

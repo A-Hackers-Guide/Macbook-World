@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>About This Prism</title>
+<style>
+  :root { color-scheme: dark; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.1); --accent:#a68cff; --dim: rgba(255,255,255,.6); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#444; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.3); --dim:#334a7a; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:auto; }
+  .wrap { padding: 28px; display:flex; flex-direction:column; gap: 18px; align-items:center; text-align:center; }
+  .mascot { width: 96px; height: 96px; filter: drop-shadow(0 8px 24px rgba(170,180,255,.4)); }
+  h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
+  .tagline { color: var(--dim); margin: 0; }
+  .info { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 340px; text-align: left; font-size: 13px; }
+  body[data-era="dawn"] .info { border-radius: 0; }
+  .info dt { color: var(--dim); font-weight: 400; }
+  .info dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .disclaimer { font-size: 11px; color: var(--dim); line-height: 1.5; max-width: 360px; }
+  .credits { color: var(--dim); font-size: 12px; }
+  a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <img class="mascot" src="../assets/icons/mascot.svg" alt="Prism mascot" />
+    <h1>Prism OS</h1>
+    <p class="tagline">A little desktop that fits in a browser tab.</p>
+    <dl class="info">
+      <dt>Era</dt><dd id="era-name">—</dd>
+      <dt>Version</dt><dd>1.0 (First Light)</dd>
+      <dt>User</dt><dd id="user-name">—</dd>
+      <dt>Storage</dt><dd id="storage">—</dd>
+      <dt>Boot chime</dt><dd>C add9, original</dd>
+    </dl>
+    <p class="disclaimer">
+      Prism OS is an original work of parody fiction. Every image, icon, wallpaper and sound in it is original to this project. Not affiliated with any computer company.
+    </p>
+    <p class="credits">
+      Built as an <a href="https://github.com/A-Hackers-Guide/Macbook-World" target="_blank" rel="noopener">open source project</a>.
+    </p>
+  </div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+const names = { dawn:"Dawn", noon:"Noon", dusk:"Dusk", nightfall:"Nightfall" };
+document.getElementById("era-name").textContent = names[era] || era;
+
+const NS = "prismos:v1";
+try {
+  const u = JSON.parse(localStorage.getItem(NS + ":setup:data")) || {};
+  document.getElementById("user-name").textContent = u.name || "Friend";
+} catch { document.getElementById("user-name").textContent = "Friend"; }
+
+try {
+  let used = 0;
+  for (const key in localStorage) {
+    if (!localStorage.hasOwnProperty(key)) continue;
+    used += (key.length + (localStorage.getItem(key) || "").length);
+  }
+  document.getElementById("storage").textContent = `${(used / 1024).toFixed(1)} KB used`;
+} catch {}
+</script>
+</body>
+</html>

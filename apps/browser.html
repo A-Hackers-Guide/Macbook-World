@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Browser</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#a68cff; --dim: rgba(255,255,255,.55); --row-hover: rgba(255,255,255,.04); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.3); --dim:#334a7a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .browser { display:grid; grid-template-rows: auto 1fr; height:100%; }
+  .toolbar { display:grid; grid-template-columns: auto auto 1fr auto; gap:6px; padding: 8px 10px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .nav-btn { width:32px; height:32px; display:grid; place-content:center; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--fg); cursor: pointer; font-size: 14px; }
+  .nav-btn:hover { background: var(--row-hover); }
+  .nav-btn:disabled { opacity: 0.4; cursor:default; }
+  .url-form { display:flex; gap:6px; }
+  .url-form input { flex:1; padding: 7px 12px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 999px; font: inherit; outline: none; }
+  .url-form input:focus { border-color: var(--accent); }
+  body[data-era="dawn"] .url-form input, body[data-era="dawn"] .nav-btn { border-radius: 0; border: 2px solid #000; }
+  .proxy-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+  .proxy-toggle input { margin: 0; }
+  .view { position: relative; height: 100%; background: var(--card); }
+  .view iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  .home { padding: 40px; display: grid; place-content: center; height: 100%; }
+  .home h1 { margin: 0 0 8px; font-size: 24px; text-align: center; }
+  .home p { margin: 0 0 24px; color: var(--dim); text-align: center; max-width: 480px; }
+  .bookmarks { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; max-width: 640px; margin: 0 auto; }
+  .bm { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); cursor: pointer; text-align: center; transition: transform .15s; }
+  .bm:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .bm .ico { font-size: 28px; margin-bottom: 6px; }
+  .bm .label { font-size: 13px; font-weight: 600; }
+  .bm .url { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  body[data-era="dawn"] .bm { border-radius: 0; }
+  .status { position: absolute; bottom: 10px; left: 10px; padding: 6px 10px; background: rgba(0,0,0,.75); color: #fff; border-radius: 6px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity .2s; }
+  .status.visible { opacity: 1; }
+  .error { display: grid; place-content: center; padding: 40px; text-align: center; color: var(--dim); }
+  .error h2 { color: var(--fg); margin: 0 0 8px; }
+  .error button { margin-top: 12px; padding: 8px 16px; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; font: inherit; }
+  body[data-era="dawn"] .error button { background: #000; color: #fff; border-radius: 0; }
+</style>
+</head>
+<body>
+  <div class="browser">
+    <div class="toolbar">
+      <button class="nav-btn" id="back" title="Back">‹</button>
+      <button class="nav-btn" id="forward" title="Forward">›</button>
+      <form class="url-form" id="url-form">
+        <input type="text" id="url" placeholder="Enter URL or search…" autocomplete="off" />
+      </form>
+      <label class="proxy-toggle" title="If a site refuses to load in a frame, try to fetch it via a public read-only proxy. Interactive sites won't work this way.">
+        <input type="checkbox" id="use-proxy" /> Proxy mode
+      </label>
+    </div>
+    <div class="view" id="view">
+      <div class="home" id="home">
+        <h1>Welcome to Browser</h1>
+        <p>Type a URL above, or pick one of these. Many sites refuse to load inside other windows — those will open in a new tab.</p>
+        <div class="bookmarks">
+          <div class="bm" data-url="https://en.wikipedia.org/wiki/Special:Random"><div class="ico">📚</div><div class="label">Wikipedia</div><div class="url">en.wikipedia.org</div></div>
+          <div class="bm" data-url="https://example.com"><div class="ico">✱</div><div class="label">Example</div><div class="url">example.com</div></div>
+          <div class="bm" data-url="https://archive.org"><div class="ico">⌛</div><div class="label">Archive</div><div class="url">archive.org</div></div>
+          <div class="bm" data-url="https://news.ycombinator.com"><div class="ico">◆</div><div class="label">HN</div><div class="url">news.ycombinator.com</div></div>
+          <div class="bm" data-url="https://duckduckgo.com"><div class="ico">🦆</div><div class="label">DuckDuckGo</div><div class="url">duckduckgo.com</div></div>
+          <div class="bm" data-url="https://github.com"><div class="ico">⌸</div><div class="label">GitHub</div><div class="url">github.com</div></div>
+        </div>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+const urlInput = document.getElementById("url");
+const view = document.getElementById("view");
+const home = document.getElementById("home");
+const statusEl = document.getElementById("status");
+const backBtn = document.getElementById("back");
+const fwdBtn = document.getElementById("forward");
+const useProxy = document.getElementById("use-proxy");
+
+const history = []; let historyIdx = -1;
+
+function status(msg, ms=1800) {
+  statusEl.textContent = msg;
+  statusEl.classList.add("visible");
+  clearTimeout(status._t);
+  if (ms) status._t = setTimeout(() => statusEl.classList.remove("visible"), ms);
+}
+
+function updateNav() {
+  backBtn.disabled = historyIdx <= 0;
+  fwdBtn.disabled = historyIdx >= history.length - 1;
+}
+
+function normalizeUrl(input) {
+  const s = input.trim();
+  if (!s) return null;
+  // If it looks like a URL, use it. Otherwise, search via DuckDuckGo.
+  if (/^(https?:)?\/\//i.test(s)) return s.startsWith("//") ? "https:" + s : s;
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(s)) return "https://" + s;
+  return "https://duckduckgo.com/?q=" + encodeURIComponent(s);
+}
+
+function clearView() {
+  for (const n of [...view.childNodes]) {
+    if (n !== home && n !== statusEl) n.remove();
+  }
+  home.style.display = "none";
+}
+
+function showHome() {
+  for (const n of [...view.childNodes]) {
+    if (n !== home && n !== statusEl) n.remove();
+  }
+  home.style.display = "grid";
+}
+
+function navigate(url, push=true) {
+  if (!url) { showHome(); return; }
+  urlInput.value = url;
+  clearView();
+
+  if (useProxy.checked) {
+    loadViaProxy(url);
+  } else {
+    const iframe = document.createElement("iframe");
+    iframe.src = url;
+    iframe.setAttribute("sandbox", "allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin");
+    iframe.addEventListener("error", () => fallback(url));
+    // Cross-origin: we can't actually detect load failure via events reliably.
+    // Watch for a timeout as a heuristic.
+    let settled = false;
+    iframe.addEventListener("load", () => { settled = true; status("Loaded"); });
+    setTimeout(() => {
+      if (!settled) {
+        // Still shows, but likely blocked. Offer fallback UI.
+        status("If the page is blank, the site probably refuses to load in a frame. Try Proxy mode or open in a new tab.", 5000);
+      }
+    }, 2200);
+    view.appendChild(iframe);
+  }
+
+  if (push) {
+    history.splice(historyIdx + 1);
+    history.push(url);
+    historyIdx = history.length - 1;
+  }
+  updateNav();
+}
+
+function fallback(url) {
+  clearView();
+  const box = document.createElement("div");
+  box.className = "error";
+  box.innerHTML = `
+    <h2>Couldn't load in this frame.</h2>
+    <p>Most big sites block being shown inside another page. You can try Proxy mode (reads the page through a public proxy — simple sites only) or open it directly.</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+      <button id="try-proxy">Try Proxy mode</button>
+      <button id="open-new" style="background:transparent;color:inherit;border:1px solid var(--border);">Open in new tab</button>
+    </div>
+  `;
+  view.appendChild(box);
+  document.getElementById("try-proxy").addEventListener("click", () => { useProxy.checked = true; navigate(url, false); });
+  document.getElementById("open-new").addEventListener("click", () => { window.open(url, "_blank", "noopener,noreferrer"); });
+}
+
+async function loadViaProxy(url) {
+  status("Loading via proxy…", 0);
+  try {
+    const proxied = "https://corsproxy.io/?" + encodeURIComponent(url);
+    const r = await fetch(proxied);
+    if (!r.ok) throw new Error("Proxy returned " + r.status);
+    let html = await r.text();
+    // Base tag so relative paths resolve back to origin
+    const base = `<base href="${url}">`;
+    if (/<head[^>]*>/i.test(html)) html = html.replace(/<head[^>]*>/i, m => m + base);
+    else html = base + html;
+    // Strip x-origin JS risks? We're already showing third-party content in an iframe with sandbox;
+    // we rely on sandbox for isolation.
+    clearView();
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "allow-same-origin");
+    iframe.srcdoc = html;
+    view.appendChild(iframe);
+    status("Loaded (read-only via proxy)", 2500);
+  } catch (e) {
+    clearView();
+    const box = document.createElement("div");
+    box.className = "error";
+    box.innerHTML = `<h2>Proxy failed.</h2><p>${e.message}. The free public proxy may be down, or the site blocks programmatic access.</p>`;
+    view.appendChild(box);
+  }
+}
+
+document.getElementById("url-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const url = normalizeUrl(urlInput.value);
+  if (url) navigate(url);
+});
+backBtn.addEventListener("click", () => { if (historyIdx > 0) { historyIdx--; navigate(history[historyIdx], false); } });
+fwdBtn.addEventListener("click", () => { if (historyIdx < history.length - 1) { historyIdx++; navigate(history[historyIdx], false); } });
+document.querySelectorAll(".bm").forEach(b => b.addEventListener("click", () => navigate(b.dataset.url)));
+
+updateNav();
+</script>
+</body>
+</html>

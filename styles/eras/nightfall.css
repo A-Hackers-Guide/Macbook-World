@@ -1,0 +1,39 @@
+/* ---- Nightfall: liquid glass, deep bokeh, translucent everything ---- */
+
+body[data-era="nightfall"] {
+  --surface: rgba(28,28,38,.52);
+  --surface-strong: rgba(38,38,52,.78);
+  --surface-ink: #f4f4f6;
+  --surface-ink-dim: rgba(244,244,246,.62);
+  --accent: #a68cff;
+  --accent-ink: #fff;
+  color-scheme: dark;
+}
+
+body[data-era="nightfall"] #menubar {
+  background: var(--surface);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+body[data-era="nightfall"] .window {
+  border-radius: 14px;
+  box-shadow:
+    0 24px 60px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 0 0 1px rgba(0,0,0,.4);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+}
+body[data-era="nightfall"] .window__chrome {
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+
+body[data-era="nightfall"] #dock {
+  background: var(--surface);
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.09);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+}

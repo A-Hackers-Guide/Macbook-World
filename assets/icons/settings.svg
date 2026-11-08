@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9598a0"/>
+      <stop offset="1" stop-color="#4a4c54"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="128" height="128" rx="28" ry="28" fill="url(#bg)"/>
+  <g fill="#f4f4f8" transform="translate(64 64)">
+    <g id="tooth-s"><rect x="-6" y="-56" width="12" height="16" rx="2"/></g>
+    <use href="#tooth-s" transform="rotate(45)"/>
+    <use href="#tooth-s" transform="rotate(90)"/>
+    <use href="#tooth-s" transform="rotate(135)"/>
+    <use href="#tooth-s" transform="rotate(180)"/>
+    <use href="#tooth-s" transform="rotate(225)"/>
+    <use href="#tooth-s" transform="rotate(270)"/>
+    <use href="#tooth-s" transform="rotate(315)"/>
+    <circle cx="0" cy="0" r="36"/>
+    <circle cx="0" cy="0" r="16" fill="#4a4c54"/>
+  </g>
+</svg>

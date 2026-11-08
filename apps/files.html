@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Files</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#a68cff; --dim: rgba(255,255,255,.55); --row-hover: rgba(255,255,255,.04); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; --row-hover:#eee; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; --row-hover:#dde1e8; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; --row-hover: rgba(255,255,255,.4); }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-columns: 220px 1fr; height:100%; }
+  .side { background: var(--card); border-right: 1px solid var(--border); padding: 12px; display:flex; flex-direction:column; gap:4px; }
+  .side h3 { margin: 10px 8px 4px; font-size: 11px; letter-spacing:.06em; text-transform:uppercase; color: var(--dim); font-weight:600; }
+  .side button { display:flex; align-items:center; gap:10px; padding:6px 10px; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; border-radius:6px; text-align:left; }
+  .side button:hover { background: var(--row-hover); }
+  .side button.active { background: var(--accent); color:#fff; }
+  body[data-era="dawn"] .side button { border-radius: 0; border: 1px solid transparent; }
+  body[data-era="dawn"] .side button.active { background:#000; color:#fff; }
+  main { display:grid; grid-template-rows: auto 1fr; overflow:hidden; }
+  .toolbar { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--card); display:flex; justify-content:space-between; align-items:center; }
+  .toolbar h2 { margin:0; font-size:15px; font-weight:600; }
+  .toolbar .path { font-size: 12px; color: var(--dim); }
+  .grid { padding: 14px; overflow:auto; display:grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 16px; align-content:start; }
+  .item { display:flex; flex-direction:column; align-items:center; gap:8px; padding: 8px; border-radius: 8px; cursor:pointer; text-align:center; font-size:12px; }
+  .item:hover { background: var(--row-hover); }
+  .item.active { background: var(--accent); color:#fff; }
+  body[data-era="dawn"] .item.active { background:#000; color:#fff; }
+  .thumb { width: 64px; height: 64px; display:grid; place-content:center; border-radius: 8px; }
+  .folder .thumb { background: linear-gradient(180deg, #8ac6ff, #3a7fe6); position: relative; }
+  .folder .thumb::before { content:""; position: absolute; left: 8px; right:8px; top: 10px; height: 10px; background: linear-gradient(180deg, #b6daff, #6ea8f5); border-radius: 2px; }
+  .folder .thumb::after { content:""; position:absolute; inset: 20px 6px 8px 6px; background: linear-gradient(180deg, #8ac6ff, #3a7fe6); border-radius: 4px; }
+  body[data-era="dawn"] .folder .thumb { background: #fff; border: 2px solid #000; }
+  body[data-era="dawn"] .folder .thumb::before { background: #fff; border:2px solid #000; }
+  body[data-era="dawn"] .folder .thumb::after { background: #fff; border:2px solid #000; }
+  .doc .thumb { background: linear-gradient(180deg, #fff, #d4d6db); color:#333; font-family: ui-monospace, Menlo, monospace; font-size: 10px; padding: 8px; align-items: flex-start; text-align: left; display:flex; flex-direction:column; overflow:hidden; }
+  .empty-state { color: var(--dim); font-size: 13px; padding: 40px 20px; text-align:center; grid-column: 1/-1; }
+  .label { max-width: 100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <h3>Favorites</h3>
+      <button data-dir="/Documents" class="dir-btn"><span>📄</span>Documents</button>
+      <button data-dir="/Downloads" class="dir-btn"><span>⬇︎</span>Downloads</button>
+      <button data-dir="/Pictures" class="dir-btn"><span>🖼</span>Pictures</button>
+      <button data-dir="/Music" class="dir-btn"><span>♪</span>Music</button>
+      <button data-dir="/Desktop" class="dir-btn"><span>⊡</span>Desktop</button>
+      <h3>Locations</h3>
+      <button data-dir="/" class="dir-btn"><span>◇</span>Prism</button>
+    </aside>
+    <main>
+      <div class="toolbar">
+        <h2 id="title">Documents</h2>
+        <span class="path" id="path">/Documents</span>
+      </div>
+      <div class="grid" id="grid"></div>
+    </main>
+  </div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+// A tiny sample filesystem — documents, folders. Everything is read-only sample content.
+const FS = {
+  "/": [
+    { kind:"folder", name:"Documents", path:"/Documents" },
+    { kind:"folder", name:"Downloads", path:"/Downloads" },
+    { kind:"folder", name:"Pictures",  path:"/Pictures"  },
+    { kind:"folder", name:"Music",     path:"/Music"     },
+    { kind:"folder", name:"Desktop",   path:"/Desktop"   },
+  ],
+  "/Documents": [
+    { kind:"folder", name:"Trips",   path:"/Documents/Trips" },
+    { kind:"doc",    name:"README.txt", body:"Welcome to Prism Files.\n\nThis is a sample filesystem — everything you see is baked into the app, nothing is read from a real disk." },
+    { kind:"doc",    name:"Grocery.txt", body:"- Bread\n- Butter\n- A floppy disk\n- Light\n- A new idea" },
+    { kind:"doc",    name:"TODO.md", body:"# TODO\n- Build a second computer\n- Teach the first one to miss me" }
+  ],
+  "/Documents/Trips": [
+    { kind:"doc", name:"2024-coast.md", body:"# Coast trip\n\nWe drove up the coast and the weather did that thing where it gets better the farther you go." }
+  ],
+  "/Downloads": [
+    { kind:"doc", name:"unknown-1.txt", body:"(This is an empty placeholder in a sample filesystem.)" }
+  ],
+  "/Pictures": [
+    { kind:"doc", name:"picture-of-a-mountain.txt", body:"(Imagine a mountain here.)" }
+  ],
+  "/Music": [],
+  "/Desktop": [
+    { kind:"doc", name:"notes-to-self.txt", body:"Drink water.\nGo outside.\nIt's okay to not finish things." }
+  ],
+};
+
+const gridEl = document.getElementById("grid");
+const titleEl = document.getElementById("title");
+const pathEl = document.getElementById("path");
+
+function render(dir) {
+  const entries = FS[dir] || [];
+  titleEl.textContent = dir === "/" ? "Prism" : dir.split("/").pop();
+  pathEl.textContent = dir;
+  gridEl.innerHTML = "";
+  if (entries.length === 0) {
+    const d = document.createElement("div");
+    d.className = "empty-state";
+    d.textContent = "This folder is empty.";
+    gridEl.appendChild(d);
+    return;
+  }
+  for (const e of entries) {
+    const n = document.createElement("div");
+    n.className = "item " + (e.kind === "folder" ? "folder" : "doc");
+    if (e.kind === "folder") {
+      n.innerHTML = `<div class="thumb"></div><span class="label">${escapeHtml(e.name)}</span>`;
+      n.addEventListener("dblclick", () => { render(e.path); markSide(e.path); });
+    } else {
+      const preview = (e.body || "").split("\n").slice(0, 3).join("\n");
+      n.innerHTML = `<div class="thumb">${escapeHtml(preview)}</div><span class="label">${escapeHtml(e.name)}</span>`;
+      n.addEventListener("dblclick", () => {
+        const w = window.open("", "_blank");
+        if (w) { w.document.body.innerText = e.body; w.document.title = e.name; }
+      });
+    }
+    gridEl.appendChild(n);
+  }
+}
+function markSide(dir) {
+  for (const b of document.querySelectorAll(".dir-btn")) b.classList.toggle("active", b.dataset.dir === dir);
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+for (const b of document.querySelectorAll(".dir-btn")) {
+  b.addEventListener("click", () => { render(b.dataset.dir); markSide(b.dataset.dir); });
+}
+render("/Documents"); markSide("/Documents");
+</script>
+</body>
+</html>

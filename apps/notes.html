@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Notes</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#a68cff; --dim: rgba(255,255,255,.55); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#3c66ff; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#1a66d9; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: var(--bg); color: var(--fg); overflow:hidden; }
+  .app { display: grid; grid-template-columns: 240px 1fr; height: 100%; }
+  .sidebar { background: var(--card); border-right: 1px solid var(--border); display:flex; flex-direction:column; }
+  .sidebar h2 { margin:0; padding:14px 16px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color: var(--dim); border-bottom:1px solid var(--border); font-weight:600; }
+  .new-btn { margin: 10px; padding: 8px 10px; background: var(--accent); color: white; border:0; border-radius:8px; font: inherit; font-weight:600; cursor:pointer; }
+  body[data-era="dawn"] .new-btn { background: #000; color: #fff; border: 2px solid #000; border-radius:0; }
+  body[data-era="noon"] .new-btn { color:#fff; }
+  .notes-list { flex:1; overflow:auto; padding: 0 6px 10px; margin: 0; list-style:none; }
+  .notes-list li { padding: 10px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; display:flex; flex-direction:column; gap:3px; }
+  .notes-list li:hover { background: var(--card); }
+  .notes-list li.active { background: var(--accent); color: #fff; }
+  body[data-era="dawn"] .notes-list li { border-radius:0; border: 1px solid transparent; }
+  body[data-era="dawn"] .notes-list li.active { background:#000; color:#fff; }
+  .note-title { font-weight: 600; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .note-preview { font-size: 12px; color: var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .notes-list li.active .note-preview { color: rgba(255,255,255,.75); }
+  .editor { display: grid; grid-template-rows: auto 1fr; }
+  .editor-head { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--card); }
+  .editor-head input { width:100%; font-family:inherit; font-size: 20px; font-weight:600; background:transparent; border:0; color: var(--fg); outline:none; }
+  .editor textarea { width:100%; height:100%; border:0; padding: 16px 20px; background: var(--bg); color: var(--fg); font-family: inherit; font-size: 15px; line-height: 1.55; resize:none; outline:none; }
+  .empty { display: grid; place-content: center; height:100%; color: var(--dim); }
+  .toolbar { position: absolute; right: 10px; top: 10px; }
+  .del-btn { background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor:pointer; }
+  .del-btn:hover { color: #ff6060; border-color: #ff6060; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h2>Notes</h2>
+      <button class="new-btn" id="new-note">＋ New Note</button>
+      <ul class="notes-list" id="list"></ul>
+    </aside>
+    <main class="editor">
+      <div class="editor-head">
+        <input id="title" placeholder="Title" autocomplete="off" />
+        <div class="toolbar"><button class="del-btn" id="del">Delete</button></div>
+      </div>
+      <textarea id="body" placeholder="Start typing…"></textarea>
+    </main>
+  </div>
+<script>
+const NS = "prismos:v1:notes";
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(NS)) || []; } catch { return []; }
+}
+function save(notes) { localStorage.setItem(NS, JSON.stringify(notes)); }
+let notes = load();
+let activeId = notes[0]?.id || null;
+
+const listEl = document.getElementById("list");
+const titleEl = document.getElementById("title");
+const bodyEl = document.getElementById("body");
+const delEl = document.getElementById("del");
+const newEl = document.getElementById("new-note");
+
+function render() {
+  listEl.innerHTML = "";
+  if (notes.length === 0) {
+    titleEl.value = ""; bodyEl.value = "";
+    titleEl.disabled = bodyEl.disabled = delEl.disabled = true;
+    return;
+  }
+  titleEl.disabled = bodyEl.disabled = delEl.disabled = false;
+  for (const n of notes) {
+    const li = document.createElement("li");
+    li.dataset.id = n.id;
+    if (n.id === activeId) li.classList.add("active");
+    li.innerHTML = `<span class="note-title">${escapeHtml(n.title || "Untitled")}</span><span class="note-preview">${escapeHtml((n.body||"").slice(0,80) || "No text")}</span>`;
+    li.addEventListener("click", () => { activeId = n.id; render(); });
+    listEl.appendChild(li);
+  }
+  const active = notes.find(n => n.id === activeId);
+  if (active) {
+    titleEl.value = active.title || "";
+    bodyEl.value = active.body || "";
+  }
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function updateActive(fields) {
+  const i = notes.findIndex(n => n.id === activeId);
+  if (i < 0) return;
+  notes[i] = { ...notes[i], ...fields, updatedAt: Date.now() };
+  save(notes);
+  // re-render list only when title changes
+  if ("title" in fields || "body" in fields) {
+    const li = listEl.querySelector(`li[data-id="${activeId}"]`);
+    if (li) {
+      li.querySelector(".note-title").textContent = notes[i].title || "Untitled";
+      li.querySelector(".note-preview").textContent = (notes[i].body || "").slice(0,80) || "No text";
+    }
+  }
+}
+
+titleEl.addEventListener("input", () => updateActive({ title: titleEl.value }));
+bodyEl.addEventListener("input", () => updateActive({ body: bodyEl.value }));
+
+newEl.addEventListener("click", () => {
+  const n = { id: Date.now().toString(36), title: "New Note", body: "", createdAt: Date.now() };
+  notes.unshift(n); activeId = n.id; save(notes); render();
+  titleEl.focus(); titleEl.select();
+});
+
+delEl.addEventListener("click", () => {
+  if (!activeId) return;
+  if (!confirm("Delete this note?")) return;
+  notes = notes.filter(n => n.id !== activeId);
+  activeId = notes[0]?.id || null;
+  save(notes); render();
+});
+
+if (notes.length === 0) {
+  notes = [{ id: "welcome", title: "Welcome", body: "This is Notes. It saves to your browser's local storage, so your notes stay on this device until you clear browser data.\n\n— Prism OS", createdAt: Date.now() }];
+  activeId = "welcome";
+  save(notes);
+}
+render();
+</script>
+</body>
+</html>

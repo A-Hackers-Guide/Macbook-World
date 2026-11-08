@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Calculator</title>
+<style>
+  :root { color-scheme: dark; --bg:#1a1a1e; --fg:#f4f4f6; --num:#3a3a44; --op:#ff9f3f; --fn:#5a5a66; --accent:#ff9f3f; }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --num:#fff; --op:#000; --fn:#fff; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#c8ccd4; --fg:#111; --num:#e9ebf0; --op:#3c66ff; --fn:#b4b7bf; }
+  body[data-era="dusk"] { --bg:#8eb0dc; --fg:#10224a; --num:#f3f6fb; --op:#1a66d9; --fn:#cbd6ea; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:hidden; }
+  .calc { display: grid; grid-template-rows: 1fr auto; height:100%; padding: 10px; gap: 8px; }
+  .display { font-size: 42px; text-align: right; padding: 14px 12px; min-height: 60px; font-weight: 300; font-variant-numeric: tabular-nums; align-self: end; overflow:hidden; text-overflow:ellipsis; }
+  .display .sub { display:block; font-size: 14px; opacity: 0.6; }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  button {
+    font: inherit; font-size: 20px; border: 0; cursor: pointer;
+    border-radius: 999px; height: 56px; color: #fff; background: var(--num);
+  }
+  body[data-era="dawn"] button { border-radius: 0; border: 2px solid #000; color: #000; }
+  body[data-era="noon"] button, body[data-era="dusk"] button { color: var(--fg); }
+  button.op { background: var(--op); color: #fff; }
+  body[data-era="dawn"] button.op { background: #000; color: #fff; }
+  button.fn { background: var(--fn); color: var(--fg); }
+  button.zero { grid-column: span 2; border-radius: 999px; }
+  body[data-era="dawn"] button.zero { border-radius: 0; }
+  button:active { filter: brightness(1.15); }
+  button.op.active { outline: 3px solid #fff; outline-offset: -3px; }
+</style>
+</head>
+<body>
+  <div class="calc">
+    <div class="display" id="display">
+      <span class="sub" id="sub"></span>
+      <span id="main">0</span>
+    </div>
+    <div class="keys">
+      <button class="fn" data-k="C">AC</button>
+      <button class="fn" data-k="+/-">±</button>
+      <button class="fn" data-k="%">%</button>
+      <button class="op" data-k="÷">÷</button>
+
+      <button data-k="7">7</button>
+      <button data-k="8">8</button>
+      <button data-k="9">9</button>
+      <button class="op" data-k="×">×</button>
+
+      <button data-k="4">4</button>
+      <button data-k="5">5</button>
+      <button data-k="6">6</button>
+      <button class="op" data-k="−">−</button>
+
+      <button data-k="1">1</button>
+      <button data-k="2">2</button>
+      <button data-k="3">3</button>
+      <button class="op" data-k="+">+</button>
+
+      <button class="zero" data-k="0">0</button>
+      <button data-k=".">.</button>
+      <button class="op" data-k="=">=</button>
+    </div>
+  </div>
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+const main = document.getElementById("main");
+const sub  = document.getElementById("sub");
+
+let acc = 0;         // accumulator
+let cur = "0";       // current entry string
+let op  = null;      // pending op
+let justEval = false;
+let showAcc = false; // whether to display acc on top
+
+function fmt(n) {
+  if (!isFinite(n)) return "Error";
+  const s = Math.abs(n) > 1e12 || (Math.abs(n) < 1e-6 && n !== 0) ? n.toExponential(6) : String(n);
+  // trim long decimals
+  if (s.includes(".")) {
+    const [a,b] = s.split(".");
+    return a + "." + b.slice(0, 10);
+  }
+  return s;
+}
+function render() {
+  main.textContent = fmt(parseFloat(cur));
+  sub.textContent  = op ? `${fmt(acc)} ${op}` : "";
+  for (const btn of document.querySelectorAll(".op")) btn.classList.remove("active");
+  if (op) document.querySelector(`.op[data-k="${op}"]`)?.classList.add("active");
+}
+function press(k) {
+  if (k >= "0" && k <= "9") {
+    if (justEval) { cur = "0"; justEval = false; }
+    cur = cur === "0" ? k : cur + k;
+  } else if (k === ".") {
+    if (justEval) { cur = "0"; justEval = false; }
+    if (!cur.includes(".")) cur = cur + ".";
+  } else if (k === "C") {
+    acc = 0; cur = "0"; op = null; justEval = false;
+  } else if (k === "+/-") {
+    cur = String(-parseFloat(cur));
+  } else if (k === "%") {
+    cur = String(parseFloat(cur) / 100);
+  } else if (["+","−","×","÷"].includes(k)) {
+    if (op && !justEval) {
+      acc = calc(acc, parseFloat(cur), op);
+    } else {
+      acc = parseFloat(cur);
+    }
+    op = k;
+    justEval = true;
+  } else if (k === "=") {
+    if (op != null) {
+      cur = String(calc(acc, parseFloat(cur), op));
+      acc = 0; op = null; justEval = true;
+    }
+  }
+  render();
+}
+function calc(a, b, o) {
+  switch (o) {
+    case "+": return a + b;
+    case "−": return a - b;
+    case "×": return a * b;
+    case "÷": return b === 0 ? NaN : a / b;
+  }
+  return b;
+}
+document.querySelectorAll("button[data-k]").forEach(b => b.addEventListener("click", () => press(b.dataset.k)));
+window.addEventListener("keydown", (e) => {
+  const map = { "Enter":"=", "=":"=", "+":"+", "-":"−", "*":"×", "/":"÷", ".":".", "Escape":"C", "%":"%", "Backspace": "C" };
+  if (map[e.key]) { e.preventDefault(); press(map[e.key]); }
+  else if (/^[0-9]$/.test(e.key)) press(e.key);
+});
+render();
+</script>
+</body>
+</html>

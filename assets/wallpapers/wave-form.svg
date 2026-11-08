@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg-w" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a1a3a"/>
+      <stop offset="1" stop-color="#2b1050"/>
+    </linearGradient>
+    <linearGradient id="w1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff5fa4" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ff5fa4"/>
+      <stop offset="1" stop-color="#ff5fa4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="w2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5faaff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#5faaff"/>
+      <stop offset="1" stop-color="#5faaff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="w3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8dff5f" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#8dff5f"/>
+      <stop offset="1" stop-color="#8dff5f" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg-w)"/>
+  <g fill="none" stroke-width="3" opacity="0.7">
+    <path d="M0 540 Q 240 380 480 540 T 960 540 T 1440 540 T 1920 540" stroke="url(#w1)"/>
+    <path d="M0 600 Q 240 440 480 600 T 960 600 T 1440 600 T 1920 600" stroke="url(#w2)" opacity="0.8"/>
+    <path d="M0 660 Q 240 500 480 660 T 960 660 T 1440 660 T 1920 660" stroke="url(#w3)" opacity="0.6"/>
+    <path d="M0 500 Q 240 340 480 500 T 960 500 T 1440 500 T 1920 500" stroke="url(#w2)" opacity="0.4"/>
+    <path d="M0 460 Q 240 300 480 460 T 960 460 T 1440 460 T 1920 460" stroke="url(#w1)" opacity="0.3"/>
+  </g>
+</svg>

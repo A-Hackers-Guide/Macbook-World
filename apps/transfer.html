@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Transfer</title>
+<style>
+  :root { color-scheme: dark light; --bg:#1c1c22; --fg:#f4f4f6; --card: rgba(255,255,255,.06); --border: rgba(255,255,255,.08); --accent:#2ac47e; --dim: rgba(255,255,255,.55); }
+  body[data-era="dawn"] { --bg:#fff; --fg:#000; --accent:#000; --card:#fff; --border:#000; --dim:#555; font-family: ui-monospace, Menlo, monospace; }
+  body[data-era="noon"] { --bg:#e4e6eb; --fg:#111; --accent:#2ac47e; --card:#f5f6f8; --border:#70737e; --dim:#4a4a4e; }
+  body[data-era="dusk"] { --bg:#e8eef9; --fg:#10224a; --accent:#2ac47e; --card: rgba(255,255,255,.65); --border: rgba(47,90,165,.25); --dim:#334a7a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; overflow:auto; }
+  .app { padding: 28px; display:flex; flex-direction:column; gap: 18px; max-width: 540px; margin: 0 auto; }
+  .head { display:flex; gap: 14px; align-items: center; }
+  .head img { width: 56px; height: 56px; }
+  .head h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  .tagline { color: var(--dim); margin: 0; font-size: 13px; }
+  .info { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  body[data-era="dawn"] .info { border-radius: 0; }
+  .info dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; }
+  .info dt { color: var(--dim); font-size: 13px; }
+  .info dd { margin: 0; font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .action-btn { padding: 11px 20px; background: var(--accent); color: #0a3d2a; border: 0; border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; font-size: 15px; }
+  body[data-era="dawn"] .action-btn { background: #000; color: #fff; border-radius: 0; border: 2px solid #000; }
+  .action-btn:hover { filter: brightness(1.08); }
+  .action-btn:disabled { opacity: 0.5; cursor: wait; }
+  .status { padding: 10px 14px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); font-size: 13px; }
+  body[data-era="dawn"] .status { border-radius: 0; }
+  .progress-bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width .2s; }
+  .log { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--dim); max-height: 140px; overflow:auto; padding: 8px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; white-space: pre-wrap; }
+  body[data-era="dawn"] .log { border-radius: 0; }
+  .hint { font-size: 12px; color: var(--dim); line-height: 1.5; }
+  .result { color: var(--accent); font-weight: 600; }
+  .err { color: #ff6060; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="head">
+      <img src="../assets/icons/transfer.svg" alt="" />
+      <div>
+        <h1>Transfer</h1>
+        <p class="tagline">Export this era as one standalone HTML file.</p>
+      </div>
+    </div>
+
+    <div class="info">
+      <dl>
+        <dt>Current era</dt><dd id="era-name">—</dd>
+        <dt>Apps included</dt><dd>Settings, Notes, Calculator, Files, Browser, About</dd>
+        <dt>Wallpapers</dt><dd>10 originals</dd>
+        <dt>Transfer app</dt><dd>Omitted from bundle (not useful inside itself)</dd>
+      </dl>
+    </div>
+
+    <button class="action-btn" id="export-btn">Export Prism OS → HTML</button>
+
+    <div class="status" id="status" hidden>
+      <div id="status-msg">Preparing…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <div class="log" id="log" hidden></div>
+
+    <p class="hint">
+      The exported file is self-contained. Everything — shell, apps, wallpapers, icons — is inlined as data URIs and <code>&lt;iframe srcdoc&gt;</code>. You can open the file anywhere offline. The Browser app still needs the internet (it's a web browser), and the Transfer app itself is left out since an export can't re-export itself.
+    </p>
+  </div>
+
+<script>
+const era = new URLSearchParams(location.search).get("era") || window.PRISM_ERA || "nightfall";
+document.body.dataset.era = era;
+
+const ERA_NAMES = { dawn:"Dawn", noon:"Noon", dusk:"Dusk", nightfall:"Nightfall" };
+const DEFAULT_WP = { dawn:"dither-pond", noon:"ridge-midday", dusk:"ocean-sunset", nightfall:"aurora-glass" };
+
+const APP_IDS   = ["settings","notes","calculator","files","browser","about"];
+const APP_NAMES = { settings:"Settings", notes:"Notes", calculator:"Calculator", files:"Files", browser:"Browser", about:"About This Prism" };
+const APP_SIZES = { settings:{w:820,h:560}, notes:{w:760,h:520}, calculator:{w:280,h:420}, files:{w:820,h:540}, browser:{w:980,h:620}, about:{w:460,h:540} };
+const WP_IDS    = ["aurora-glass","ocean-sunset","mountain-dawn","ridge-midday","desert-dune","forest-mist","space-nebula","wave-form","crystal-glyph","dither-pond"];
+const ICON_IDS  = ["mascot","settings","notes","calculator","files","browser","transfer","about"];
+
+document.getElementById("era-name").textContent = ERA_NAMES[era] || era;
+const exportBtn = document.getElementById("export-btn");
+const statusEl = document.getElementById("status");
+const statusMsg = document.getElementById("status-msg");
+const progressFill = document.getElementById("progress-fill");
+const logEl = document.getElementById("log");
+
+function log(msg) {
+  logEl.hidden = false;
+  logEl.textContent += msg + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function setProgress(pct, msg) {
+  statusEl.hidden = false;
+  if (msg) statusMsg.textContent = msg;
+  progressFill.style.width = pct + "%";
+}
+
+async function fetchText(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Failed to fetch ${url}: ${r.status}`);
+  return r.text();
+}
+async function fetchDataUri(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Failed to fetch ${url}: ${r.status}`);
+  const blob = await r.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function rewriteAppPaths(html, icons, wallpapers) {
+  html = html.replace(/(['"])\.\.\/assets\/icons\/([a-z0-9-]+)\.svg\1/gi, (m, q, name) => {
+    const d = icons[name]; return d ? `${q}${d}${q}` : m;
+  });
+  html = html.replace(/(['"])\.\.\/assets\/wallpapers\/([a-z0-9-]+)\.svg\1/gi, (m, q, name) => {
+    const d = wallpapers[name]; return d ? `${q}${d}${q}` : m;
+  });
+  return html;
+}
+
+function safeJsonString(obj) {
+  return JSON.stringify(obj).replace(/<\/script/gi, "<\\/script").replace(/<!--/g, "<\\!--");
+}
+
+async function bundleEra(targetEra) {
+  const base = new URL("../", location.href).href;
+  const totalSteps = 3 + APP_IDS.length + WP_IDS.length + ICON_IDS.length + 1;
+  let step = 0;
+  const bump = (msg) => { step++; setProgress(Math.round((step / totalSteps) * 100), msg); log("[" + step + "/" + totalSteps + "] " + msg); };
+
+  bump("Fetching base CSS");
+  const baseCss = await fetchText(base + "styles/base.css");
+  bump("Fetching shell CSS");
+  const shellCss = await fetchText(base + "styles/shell.css");
+  bump("Fetching era CSS (" + targetEra + ")");
+  const eraCss = await fetchText(base + "styles/eras/" + targetEra + ".css");
+
+  const apps = {};
+  for (const id of APP_IDS) {
+    bump("Fetching app: " + id);
+    apps[id] = await fetchText(base + "apps/" + id + ".html");
+  }
+
+  const wallpapers = {};
+  for (const id of WP_IDS) {
+    bump("Inlining wallpaper: " + id);
+    wallpapers[id] = await fetchDataUri(base + "assets/wallpapers/" + id + ".svg");
+  }
+
+  const icons = {};
+  for (const id of ICON_IDS) {
+    bump("Inlining icon: " + id);
+    icons[id] = await fetchDataUri(base + "assets/icons/" + id + ".svg");
+  }
+
+  bump("Assembling bundle");
+  const bundledApps = APP_IDS.map(id => ({
+    id,
+    name: APP_NAMES[id],
+    icon: icons[id],
+    size: APP_SIZES[id],
+    html: rewriteAppPaths(apps[id], icons, wallpapers),
+  }));
+
+  return buildBundle({
+    era: targetEra,
+    baseCss, shellCss, eraCss,
+    wallpapers, icons, bundledApps,
+    defaultWallpaper: DEFAULT_WP[targetEra] || WP_IDS[0],
+  });
+}
+
+function buildBundle(d) {
+  const { era, baseCss, shellCss, eraCss, wallpapers, icons, bundledApps, defaultWallpaper } = d;
+
+  const parts = [
+    "<!DOCTYPE html>\n",
+    "<html lang=\"en\">\n",
+    "<head>\n",
+    '<meta charset="UTF-8"/>\n',
+    '<meta name="viewport" content="width=device-width,initial-scale=1"/>\n',
+    "<title>Prism OS — ", era, "</title>\n",
+    '<link rel="icon" type="image/svg+xml" href="', icons.mascot, '"/>\n',
+    "<style>", baseCss, "</style>\n",
+    "<style>", shellCss, "</style>\n",
+    "<style>", eraCss, "</style>\n",
+    "</head>\n",
+    '<body class="phase-desktop" data-era="', era, '">\n',
+    '<div id="wallpaper" aria-hidden="true"></div>\n',
+    '<nav id="menubar" role="menubar">\n',
+    '  <button class="menubar__prism"><img src="', icons.mascot, '" alt=""/></button>\n',
+    '  <strong class="menubar__app-name" id="active-app-name">Prism</strong>\n',
+    '  <button class="menubar__item">File</button>\n',
+    '  <button class="menubar__item">Edit</button>\n',
+    '  <button class="menubar__item">View</button>\n',
+    '  <button class="menubar__item">Window</button>\n',
+    '  <button class="menubar__item">Help</button>\n',
+    '  <span class="menubar__spacer"></span>\n',
+    '  <button class="menubar__item"><time id="menubar-date"></time>&nbsp;<time id="menubar-clock"></time></button>\n',
+    "</nav>\n",
+    '<div id="desktop"></div>\n',
+    '<nav id="dock" role="toolbar"></nav>\n',
+    '<template id="window-template">\n',
+    '  <section class="window" tabindex="0">\n',
+    '    <header class="window__chrome">\n',
+    '      <div class="window__traffic">\n',
+    '        <button class="t t--close" data-win="close"><span></span></button>\n',
+    '        <button class="t t--min" data-win="min"><span></span></button>\n',
+    '        <button class="t t--zoom" data-win="zoom"><span></span></button>\n',
+    '      </div>\n',
+    '      <span class="window__title"></span>\n',
+    '    </header>\n',
+    '    <iframe class="window__frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" title=""></iframe>\n',
+    '    <div class="window__resize" data-win="resize" aria-hidden="true"></div>\n',
+    '  </section>\n',
+    '</template>\n',
+    "<script>\n",
+    "const ERA = ", JSON.stringify(era), ";\n",
+    "const WALLPAPERS = ", safeJsonString(wallpapers), ";\n",
+    "const ICONS = ", safeJsonString(icons), ";\n",
+    "const APPS = ", safeJsonString(bundledApps), ";\n",
+    "const DEFAULT_WALLPAPER = ", JSON.stringify(defaultWallpaper), ";\n",
+    BUNDLE_RUNTIME,
+    "\n</", "script>\n",
+    "</body>\n",
+    "</html>\n",
+  ];
+  return parts.join("");
+}
+
+const BUNDLE_RUNTIME = `
+// --- Prism OS bundled runtime ---
+document.getElementById("wallpaper").style.background = "url(\\"" + WALLPAPERS[DEFAULT_WALLPAPER] + "\\") center/cover no-repeat";
+
+const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function pad(n){return String(n).padStart(2,"0");}
+function tick(){
+  const d=new Date(), h12=((d.getHours()+11)%12)+1, am=d.getHours()<12?"AM":"PM";
+  document.getElementById("menubar-date").textContent = DAYS[d.getDay()]+" "+MONTHS[d.getMonth()]+" "+d.getDate();
+  document.getElementById("menubar-clock").textContent = h12+":"+pad(d.getMinutes())+" "+am;
+}
+tick(); setInterval(tick, 15000);
+
+const dockEl = document.getElementById("dock");
+for (const app of APPS) {
+  const b = document.createElement("button");
+  b.className = "dock__item"; b.dataset.appId = app.id;
+  b.innerHTML = '<img src="'+app.icon+'" alt="'+app.name+'"/><span class="dock__tooltip">'+app.name+'</span>';
+  b.addEventListener("click", ()=>openApp(app.id));
+  dockEl.appendChild(b);
+}
+
+const desktopEl = document.getElementById("desktop");
+const winTpl = document.getElementById("window-template");
+let topZ = 100;
+const openWindows = new Map();
+
+function openApp(id){
+  const app = APPS.find(a=>a.id===id); if(!app) return;
+  const existing = openWindows.get(id);
+  if (existing){ focusWindow(existing.el); existing.el.classList.remove("is-minimized"); return; }
+  const node = winTpl.content.firstElementChild.cloneNode(true);
+  node.dataset.appId = id;
+  node.querySelector(".window__title").textContent = app.name;
+  const iframe = node.querySelector("iframe");
+  iframe.srcdoc = "<" + "script>window.PRISM_ERA=" + JSON.stringify(ERA) + ";</" + "script>" + app.html;
+  iframe.title = app.name;
+  const W = Math.min(app.size.w, window.innerWidth-40);
+  const H = Math.min(app.size.h, window.innerHeight-120);
+  node.style.width = W+"px"; node.style.height = H+"px";
+  const off = openWindows.size * 24;
+  node.style.left = Math.max(20, (window.innerWidth-W)/2 + off) + "px";
+  node.style.top  = Math.max(40, (window.innerHeight-H)/2 - 30 + off) + "px";
+  wireWindow(node, id);
+  desktopEl.appendChild(node);
+  focusWindow(node);
+  dockEl.querySelector('[data-app-id="'+id+'"]')?.classList.add("is-running");
+  openWindows.set(id, { el: node });
+}
+function focusWindow(el){
+  topZ++; el.style.zIndex=topZ;
+  for (const w of openWindows.values()) w.el.classList.remove("is-focused");
+  el.classList.add("is-focused");
+  const id = el.dataset.appId;
+  const app = APPS.find(a=>a.id===id);
+  document.getElementById("active-app-name").textContent = app ? app.name : "Prism";
+}
+function closeWindow(id){
+  const r = openWindows.get(id); if (!r) return;
+  r.el.classList.add("is-closing");
+  setTimeout(()=>{ r.el.remove(); openWindows.delete(id); dockEl.querySelector('[data-app-id="'+id+'"]')?.classList.remove("is-running"); if (openWindows.size===0) document.getElementById("active-app-name").textContent = "Prism"; }, 180);
+}
+function minWindow(id){ const r=openWindows.get(id); if(r) r.el.classList.add("is-minimized"); }
+function zoomWindow(id){
+  const r = openWindows.get(id); if (!r) return;
+  const el = r.el;
+  if (el.dataset.zoomed === "1") {
+    el.style.left=el.dataset.prevLeft; el.style.top=el.dataset.prevTop;
+    el.style.width=el.dataset.prevWidth; el.style.height=el.dataset.prevHeight;
+    el.dataset.zoomed = "";
+  } else {
+    el.dataset.prevLeft=el.style.left; el.dataset.prevTop=el.style.top;
+    el.dataset.prevWidth=el.style.width; el.dataset.prevHeight=el.style.height;
+    el.style.left="16px"; el.style.top="40px";
+    el.style.width=(window.innerWidth-32)+"px"; el.style.height=(window.innerHeight-120)+"px";
+    el.dataset.zoomed = "1";
+  }
+}
+function wireWindow(el, id){
+  el.addEventListener("mousedown", ()=>focusWindow(el), true);
+  el.querySelector('[data-win="close"]').addEventListener("click", (e)=>{ e.stopPropagation(); closeWindow(id); });
+  el.querySelector('[data-win="min"]').addEventListener("click",   (e)=>{ e.stopPropagation(); minWindow(id); });
+  el.querySelector('[data-win="zoom"]').addEventListener("click",  (e)=>{ e.stopPropagation(); zoomWindow(id); });
+  const chrome = el.querySelector(".window__chrome");
+  let ds = null;
+  chrome.addEventListener("mousedown", (e)=>{
+    if (e.target.closest(".window__traffic")) return;
+    ds = { x:e.clientX, y:e.clientY, left:parseFloat(el.style.left), top:parseFloat(el.style.top) };
+    e.preventDefault();
+  });
+  document.addEventListener("mousemove", (e)=>{
+    if (!ds) return;
+    el.style.left = (ds.left + e.clientX - ds.x) + "px";
+    el.style.top  = Math.max(26, ds.top + e.clientY - ds.y) + "px";
+  });
+  document.addEventListener("mouseup", ()=>{ ds = null; });
+  const grip = el.querySelector('[data-win="resize"]');
+  let rs = null;
+  grip.addEventListener("mousedown", (e)=>{ rs={x:e.clientX,y:e.clientY,w:el.offsetWidth,h:el.offsetHeight}; e.stopPropagation(); e.preventDefault(); });
+  document.addEventListener("mousemove", (e)=>{ if (!rs) return; el.style.width=Math.max(260, rs.w + e.clientX - rs.x)+"px"; el.style.height=Math.max(180, rs.h + e.clientY - rs.y)+"px"; });
+  document.addEventListener("mouseup", ()=>{ rs = null; });
+}
+
+window.addEventListener("message", (e)=>{
+  const d = e.data || {};
+  if (d && d.type === "prism:wallpaper" && WALLPAPERS[d.wallpaperId]) {
+    document.getElementById("wallpaper").style.background = "url(\\"" + WALLPAPERS[d.wallpaperId] + "\\") center/cover no-repeat";
+  }
+  if (d && d.type === "prism:open-app") openApp(d.appId);
+});
+
+setTimeout(()=>openApp("about"), 400);
+`;
+
+exportBtn.addEventListener("click", async () => {
+  exportBtn.disabled = true;
+  logEl.textContent = "";
+  statusEl.hidden = false;
+  setProgress(0, "Starting export…");
+  try {
+    const html = await bundleEra(era);
+    setProgress(100, "Downloading…");
+    log("Bundle size: " + (new Blob([html]).size / 1024).toFixed(1) + " KB");
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `prism-os-${era}.html`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    statusMsg.innerHTML = '<span class="result">Done. Check your Downloads.</span>';
+  } catch (e) {
+    statusMsg.innerHTML = '<span class="err">Failed: ' + (e.message || String(e)) + '</span>';
+    log("ERROR: " + (e.message || String(e)));
+  } finally {
+    exportBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

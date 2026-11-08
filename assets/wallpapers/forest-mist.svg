@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c7d8d1"/>
+      <stop offset="1" stop-color="#7fa89a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <g fill="#5a7f6d" opacity="0.5">
+    <path d="M100 620 L140 500 L180 620 Z"/><path d="M220 640 L270 480 L320 640 Z"/><path d="M360 630 L410 500 L460 630 Z"/>
+    <path d="M500 650 L540 510 L580 650 Z"/><path d="M620 630 L680 490 L740 630 Z"/><path d="M780 650 L820 520 L860 650 Z"/>
+    <path d="M900 620 L960 480 L1020 620 Z"/><path d="M1060 640 L1100 510 L1140 640 Z"/><path d="M1180 630 L1240 490 L1300 630 Z"/>
+    <path d="M1340 650 L1380 520 L1420 650 Z"/><path d="M1460 620 L1520 480 L1580 620 Z"/><path d="M1620 640 L1660 510 L1700 640 Z"/>
+    <path d="M1740 630 L1800 490 L1860 630 Z"/>
+  </g>
+  <rect y="620" width="1920" height="80" fill="#fff" opacity="0.35"/>
+  <g fill="#2f4a3b">
+    <path d="M60 820 L120 640 L180 820 Z"/><path d="M200 830 L270 620 L340 830 Z"/><path d="M380 820 L440 650 L500 820 Z"/>
+    <path d="M560 830 L620 620 L680 830 Z"/><path d="M720 820 L780 640 L840 820 Z"/><path d="M880 830 L960 610 L1040 830 Z"/>
+    <path d="M1080 820 L1140 640 L1200 820 Z"/><path d="M1240 830 L1320 620 L1400 830 Z"/><path d="M1420 820 L1480 650 L1540 820 Z"/>
+    <path d="M1580 830 L1660 610 L1740 830 Z"/><path d="M1780 820 L1840 640 L1900 820 Z"/>
+  </g>
+  <rect y="820" width="1920" height="260" fill="#1a2f23"/>
+</svg>
